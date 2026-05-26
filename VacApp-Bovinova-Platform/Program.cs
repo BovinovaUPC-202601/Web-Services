@@ -31,7 +31,18 @@ using VacApp_Bovinova_Platform.IAM.Application.QueryServices;
 using dotenv.net;
 using VacApp_Bovinova_Platform.Shared.Application.OutboundServices;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Media.Cloudinary;
+using VacApp_Bovinova_Platform.Shared.Infrastructure.Media.Local;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Extensions;
+using VacApp_Bovinova_Platform.AIAssistant.Domain.Repositories;
+using VacApp_Bovinova_Platform.AIAssistant.Domain.Services;
+using VacApp_Bovinova_Platform.AIAssistant.Application.ACL;
+using VacApp_Bovinova_Platform.AIAssistant.Application.Internal.CommandServices;
+using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.ACL;
+using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Clients;
+using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Configuration;
+using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Services;
+using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.Persistence.EFC.Configuration;
+using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.Persistence.EFC.Repositories;
 
 DotEnv.Load();
 
@@ -85,7 +96,8 @@ var connectionString = $"Server={Environment.GetEnvironmentVariable("DB_HOST")};
                        $"Port={Environment.GetEnvironmentVariable("DB_PORT")};" +
                        $"Database={Environment.GetEnvironmentVariable("DB_NAME")};" +
                        $"User={Environment.GetEnvironmentVariable("DB_USER")};" +
-                       $"Password={Environment.GetEnvironmentVariable("DB_PASS")};";
+                       $"Password={Environment.GetEnvironmentVariable("DB_PASS")};" +
+                       $"SslMode={Environment.GetEnvironmentVariable("DB_SSL_MODE") ?? "none"};";
 
 // Verify Database Connection string
 if (string.IsNullOrEmpty(connectionString))
@@ -122,7 +134,14 @@ builder.Services.AddCors(options =>
 
 // Shared Bounded Context Injection Configuration
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<IMediaStorageService, CloudinaryService>();
+builder.Services.AddScoped<IMediaStorageService>(_ =>
+{
+    var cloudinaryUrl = Environment.GetEnvironmentVariable("CLOUDINARY_URL");
+    var useLocalMediaStorage = string.IsNullOrWhiteSpace(cloudinaryUrl) ||
+                               cloudinaryUrl.Contains("dummy", StringComparison.OrdinalIgnoreCase);
+
+    return useLocalMediaStorage ? new LocalMediaStorageService() : new CloudinaryService();
+});
 
 //IAM
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -159,6 +178,24 @@ builder.Services.AddScoped<ICampaignRepository, CampaignRepository>();
 builder.Services.AddScoped<ICampaignCommandService, CampaignCommandService>();
 builder.Services.AddScoped<ICampaignQueryService, CampaignQueryService>();
 
+//AI Assistant BC
+builder.Services.Configure<LocalModelSettings>(options =>
+{
+    var configuredSettings = builder.Configuration.GetSection("LocalModelSettings").Get<LocalModelSettings>() ??
+                             new LocalModelSettings();
+    options.BaseUrl = Environment.GetEnvironmentVariable("LM_STUDIO_BASE_URL") ?? configuredSettings.BaseUrl;
+    options.Model = Environment.GetEnvironmentVariable("LM_STUDIO_MODEL") ?? configuredSettings.Model;
+    options.ApiKey = Environment.GetEnvironmentVariable("LM_STUDIO_API_KEY") ?? configuredSettings.ApiKey;
+    options.Temperature = configuredSettings.Temperature;
+});
+builder.Services.AddHttpClient<ILocalModelClient, OpenAICompatibleModelClient>();
+builder.Services.AddScoped<IAIChatService, LmStudioChatService>();
+builder.Services.AddScoped<IAIVisionService, LmStudioVisionService>();
+builder.Services.AddScoped<IAISessionRepository, AISessionRepository>();
+builder.Services.AddScoped<IBovineAnalysisRepository, BovineAnalysisRepository>();
+builder.Services.AddScoped<IRanchContextFacade, RanchContextFacade>();
+builder.Services.AddScoped<IAIAssistantCommandService, AIAssistantCommandService>();
+
 
 /////////////////////////End Database Configuration/////////////////////////
 var app = builder.Build();
@@ -169,6 +206,7 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<AppDbContext>();
     context.Database.EnsureCreated();
+    context.EnsureAIAssistantTablesCreated();
 }
 
 // Configure the HTTP request pipeline.
