@@ -32,6 +32,11 @@ using dotenv.net;
 using VacApp_Bovinova_Platform.Shared.Application.OutboundServices;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Media.Cloudinary;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Extensions;
+using VacApp_Bovinova_Platform.IoTMonitoring.Application.Internal.CommandServices;
+using VacApp_Bovinova_Platform.IoTMonitoring.Application.Internal.QueryServices;
+using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Repositories;
+using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Services;
+using VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Persistence.EFC.Repositories;
 
 DotEnv.Load();
 
@@ -158,6 +163,11 @@ builder.Services.AddScoped<IStaffCommandService, StaffCommandService>();
 builder.Services.AddScoped<ICampaignRepository, CampaignRepository>();
 builder.Services.AddScoped<ICampaignCommandService, CampaignCommandService>();
 builder.Services.AddScoped<ICampaignQueryService, CampaignQueryService>();
+
+//IoT Monitoring BC
+builder.Services.AddScoped<IBovineHealthRecordRepository, BovineHealthRecordRepository>();
+builder.Services.AddScoped<IBovineHealthRecordCommandService, BovineHealthRecordCommandService>();
+builder.Services.AddScoped<IBovineHealthRecordQueryService, BovineHealthRecordQueryService>();
 
 
 /////////////////////////End Database Configuration/////////////////////////

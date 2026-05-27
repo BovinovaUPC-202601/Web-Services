@@ -5,6 +5,7 @@ using VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configurati
 using VacApp_Bovinova_Platform.StaffAdministration.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates;
+using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configuration;
@@ -16,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Product> Products { get; set; }
+    public DbSet<BovineHealthRecord> BovineHealthRecords { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -104,6 +106,21 @@ public class AppDbContext : DbContext
         builder.Entity<Campaign>().Property(c => c.StartDate).IsRequired();
         builder.Entity<Campaign>().Property(c => c.EndDate).IsRequired();
         builder.Entity<Campaign>().Property(c => c.UserId).IsRequired().HasColumnName("user_id");
+
+        /* IoT Monitoring */
+        builder.Entity<BovineHealthRecord>().HasKey(r => r.Id);
+        builder.Entity<BovineHealthRecord>().Property(r => r.Id).IsRequired().ValueGeneratedOnAdd();
+        builder.Entity<BovineHealthRecord>().Property(r => r.BovineId).IsRequired().HasColumnName("bovine_id");
+        builder.Entity<BovineHealthRecord>().Property(r => r.DeviceId).IsRequired().HasMaxLength(100);
+        builder.Entity<BovineHealthRecord>().Property(r => r.Temperature).IsRequired();
+        builder.Entity<BovineHealthRecord>().Property(r => r.HeartRate).IsRequired();
+        builder.Entity<BovineHealthRecord>().Property(r => r.IsAlert).IsRequired();
+        builder.Entity<BovineHealthRecord>().Property(r => r.RecordedAt).IsRequired();
+        builder.Entity<BovineHealthRecord>()
+            .HasOne<Bovine>()
+            .WithMany()
+            .HasForeignKey(r => r.BovineId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.UseSnakeCaseNamingConvention();
     }
