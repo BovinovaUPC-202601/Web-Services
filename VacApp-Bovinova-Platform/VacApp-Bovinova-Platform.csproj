@@ -25,6 +25,8 @@
         <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
         <PackageReference Include="CloudinaryDotNet" Version="1.27.5" />
+        <PackageReference Include="MediatR" Version="12.4.1" />
+        <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.1.0" />
     </ItemGroup>
 
 </Project>

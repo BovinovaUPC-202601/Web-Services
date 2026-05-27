@@ -7,5 +7,6 @@ public static class CreateBovineHealthRecordCommandFromResourceAssembler
 {
     public static CreateBovineHealthRecordCommand ToCommandFromResource(
         CreateBovineHealthRecordResource resource)
-        => new(resource.BovineId, resource.DeviceId, resource.Temperature, resource.HeartRate);
+        => new(resource.BovineId, resource.UserId, resource.DeviceId,
+               resource.Temperature, resource.HeartRate);
 }

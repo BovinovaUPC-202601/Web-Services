@@ -6,6 +6,8 @@ using VacApp_Bovinova_Platform.StaffAdministration.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates;
+using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.Aggregates;
+using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.ValueObjects;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configuration;
@@ -18,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<Category> Categories { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<BovineHealthRecord> BovineHealthRecords { get; set; }
+    public DbSet<Alert> Alerts { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -121,6 +124,20 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(r => r.BovineId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        /* Alert Management */
+        builder.Entity<Alert>().HasKey(a => a.Id);
+        builder.Entity<Alert>().Property(a => a.Id).IsRequired().ValueGeneratedOnAdd();
+        builder.Entity<Alert>().Property(a => a.BovineId).IsRequired().HasColumnName("bovine_id");
+        builder.Entity<Alert>().Property(a => a.UserId).IsRequired().HasColumnName("user_id");
+        builder.Entity<Alert>().Property(a => a.AlertType).IsRequired()
+            .HasConversion<string>().HasColumnName("alert_type");
+        builder.Entity<Alert>().Property(a => a.UrgencyLevel).IsRequired()
+            .HasConversion<string>().HasColumnName("urgency_level");
+        builder.Entity<Alert>().Property(a => a.Status).IsRequired()
+            .HasConversion<string>().HasColumnName("status");
+        builder.Entity<Alert>().Property(a => a.Message).IsRequired().HasMaxLength(500);
+        builder.Entity<Alert>().Property(a => a.CreatedAt).IsRequired().HasColumnName("created_at");
 
         builder.UseSnakeCaseNamingConvention();
     }

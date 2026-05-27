@@ -31,6 +31,11 @@ using VacApp_Bovinova_Platform.IAM.Application.QueryServices;
 using dotenv.net;
 using VacApp_Bovinova_Platform.Shared.Application.OutboundServices;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Media.Cloudinary;
+using VacApp_Bovinova_Platform.AlertManagement.Application.Internal.CommandServices;
+using VacApp_Bovinova_Platform.AlertManagement.Application.Internal.QueryServices;
+using VacApp_Bovinova_Platform.AlertManagement.Domain.Repositories;
+using VacApp_Bovinova_Platform.AlertManagement.Domain.Services;
+using VacApp_Bovinova_Platform.AlertManagement.Infrastructure.Persistence.EFC.Repositories;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Extensions;
 using VacApp_Bovinova_Platform.IoTMonitoring.Application.Internal.CommandServices;
 using VacApp_Bovinova_Platform.IoTMonitoring.Application.Internal.QueryServices;
@@ -168,6 +173,15 @@ builder.Services.AddScoped<ICampaignQueryService, CampaignQueryService>();
 builder.Services.AddScoped<IBovineHealthRecordRepository, BovineHealthRecordRepository>();
 builder.Services.AddScoped<IBovineHealthRecordCommandService, BovineHealthRecordCommandService>();
 builder.Services.AddScoped<IBovineHealthRecordQueryService, BovineHealthRecordQueryService>();
+
+//Alert Management BC
+builder.Services.AddScoped<IAlertRepository, AlertRepository>();
+builder.Services.AddScoped<IAlertCommandService, AlertCommandService>();
+builder.Services.AddScoped<IAlertQueryService, AlertQueryService>();
+
+//MediatR — scans all handlers in this assembly
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
 
 /////////////////////////End Database Configuration/////////////////////////
