@@ -21,13 +21,13 @@ jobs:
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.x'
+          dotnet-version: '8.x'
 
       - name: Build with dotnet
-        run: dotnet build --configuration Release
+        run: dotnet build ./VacApp-Bovinova-Platform/VacApp-Bovinova-Platform.csproj --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+        run: dotnet publish ./VacApp-Bovinova-Platform/VacApp-Bovinova-Platform.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -62,4 +62,5 @@ jobs:
           app-name: 'vacapp'
           slot-name: 'Production'
           package: .
+          startup-command: 'dotnet VacApp-Bovinova-Platform.dll'
           

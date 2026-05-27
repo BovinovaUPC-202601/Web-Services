@@ -97,7 +97,8 @@ var connectionString = $"Server={Environment.GetEnvironmentVariable("DB_HOST")};
                        $"Database={Environment.GetEnvironmentVariable("DB_NAME")};" +
                        $"User={Environment.GetEnvironmentVariable("DB_USER")};" +
                        $"Password={Environment.GetEnvironmentVariable("DB_PASS")};" +
-                       $"SslMode={Environment.GetEnvironmentVariable("DB_SSL_MODE") ?? "none"};";
+                       $"SslMode={Environment.GetEnvironmentVariable("DB_SSL_MODE") ?? "none"};" +
+                       $"AllowPublicKeyRetrieval={Environment.GetEnvironmentVariable("DB_ALLOW_PUBLIC_KEY_RETRIEVAL") ?? "false"};";
 
 // Verify Database Connection string
 if (string.IsNullOrEmpty(connectionString))
