@@ -22,6 +22,9 @@ namespace VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates
         [EmailAddress]
         public string Email { get; private set; }
 
+        [Required]
+        public string SubscriptionPlan { get; private set; } = "Free";
+
         private User() { }
 
         public User(SignUpCommand command)
@@ -42,6 +45,11 @@ namespace VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates
 
             if (command.Password != null)
                 Password = command.Password;
+        }
+
+        public void ChangeSubscription(string plan)
+        {
+            SubscriptionPlan = plan;
         }
     }
 }
