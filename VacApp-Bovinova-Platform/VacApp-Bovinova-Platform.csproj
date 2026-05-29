@@ -29,4 +29,13 @@
         <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.1.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="AiAssistant\Application\" />
+      <Folder Include="AiAssistant\Domain\Model\Aggregates\" />
+      <Folder Include="AiAssistant\Domain\Model\Commands\" />
+      <Folder Include="AiAssistant\Domain\Model\Entities\" />
+      <Folder Include="AiAssistant\Domain\Repositories\" />
+      <Folder Include="AiAssistant\Domain\Services\" />
+    </ItemGroup>
+
 </Project>
