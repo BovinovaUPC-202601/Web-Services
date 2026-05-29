@@ -36,4 +36,13 @@ public class Campaign
         EndDate = command.EndDate;
         UserId = command.UserId;
     }
+
+    // Actualiza los campos editables de la campaña.
+    public void Update(UpdateCampaignCommand command)
+    {
+        Name = command.Name;
+        Description = command.Description;
+        StartDate = command.StartDate;
+        EndDate = command.EndDate;
+    }
 }
