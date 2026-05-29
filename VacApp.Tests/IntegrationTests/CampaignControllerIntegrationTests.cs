@@ -104,12 +104,8 @@ namespace VacApp.Tests.IntegrationTests
         public async Task DeleteCampaign_ReturnsOk()
         {
             // Arrange
-            var campaign = new Campaign(new CreateCampaignCommand(
-                "Campaña A", "Desc", DateOnly.FromDateTime(DateTime.Today),
-                DateOnly.FromDateTime(DateTime.Today.AddDays(10)), _user.Id
-            ));
             _commandServiceMock.Setup(x => x.Handle(It.IsAny<DeleteCampaignCommand>()))
-                .ReturnsAsync(new List<Campaign> { campaign });
+                .ReturnsAsync(true);
 
             // Act
             var result = await _controller.DeleteCampaign(1);
@@ -125,7 +121,7 @@ namespace VacApp.Tests.IntegrationTests
         {
             // Arrange
             _commandServiceMock.Setup(x => x.Handle(It.IsAny<DeleteCampaignCommand>()))
-                .ReturnsAsync(new List<Campaign>());
+                .ReturnsAsync(false);
 
             // Act
             var result = await _controller.DeleteCampaign(1);
