@@ -127,5 +127,25 @@ namespace VacApp_Bovinova_Platform.IAM.Interfaces.REST
             var userResource = new UserProfileResource(updatedUser.Username, updatedUser.Email);
             return Ok(userResource);
         }
+
+        [HttpPut("subscription")]
+        [SwaggerResponse(StatusCodes.Status200OK, "Subscription updated")]
+        public async Task<IActionResult> UpdateSubscription([FromBody] UpdateSubscriptionResource resource)
+        {
+            var user = HttpContext.Items["User"] as User;
+
+            if (user is null)
+                return Unauthorized("User not found in context.");
+
+            user.ChangeSubscription(resource.SubscriptionPlan);
+
+            await commandService.UpdateAsync(user);
+
+            return Ok(new
+            {
+                message = "Subscription updated",
+                subscription = user.SubscriptionPlan
+            });
+        }
     }
 }
