@@ -6,5 +6,6 @@ namespace VacApp_Bovinova_Platform.CampaignManagement.Domain.Services;
 public interface ICampaignCommandService
 {
     Task<Campaign?> Handle(CreateCampaignCommand command);
-    Task<IEnumerable<Campaign>> Handle(DeleteCampaignCommand command);
+    Task<Campaign?> Handle(UpdateCampaignCommand command);
+    Task<bool> Handle(DeleteCampaignCommand command);
 }
