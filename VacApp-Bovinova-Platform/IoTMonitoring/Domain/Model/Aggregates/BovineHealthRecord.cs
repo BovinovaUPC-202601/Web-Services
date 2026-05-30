@@ -16,6 +16,7 @@ public class BovineHealthRecord
 
     public int      Id          { get; private set; }
     public int      BovineId    { get; private set; }
+    public int      UserId      { get; private set; }   // owner (rancher) of the bovine
     public string   DeviceId    { get; private set; }
     public float    Temperature { get; private set; }   // °C
     public float    HeartRate   { get; private set; }   // bpm
@@ -30,6 +31,7 @@ public class BovineHealthRecord
     public BovineHealthRecord(CreateBovineHealthRecordCommand command)
     {
         BovineId    = command.BovineId;
+        UserId      = command.UserId;
         DeviceId    = command.DeviceId;
         Temperature = command.Temperature;
         HeartRate   = command.HeartRate;

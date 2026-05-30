@@ -1,5 +1,6 @@
 using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
+using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Attributes;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Queries;
@@ -54,7 +55,10 @@ public class BovineHealthRecordController(
     public async Task<ActionResult<IEnumerable<BovineHealthRecordResource>>> GetRecordsByBovineId(
         [FromRoute] int bovineId)
     {
-        var records = await queryService.Handle(new GetHealthRecordsByBovineIdQuery(bovineId));
+        var user = HttpContext.Items["User"] as User;
+        if (user is null) return Unauthorized("User not found in context.");
+
+        var records = await queryService.Handle(new GetHealthRecordsByBovineIdQuery(bovineId, user.Id));
         var resources = records.Select(BovineHealthRecordResourceFromEntityAssembler.ToResourceFromEntity);
         return Ok(resources);
     }
@@ -69,7 +73,10 @@ public class BovineHealthRecordController(
     public async Task<ActionResult<BovineHealthRecordResource>> GetLatestByBovineId(
         [FromRoute] int bovineId)
     {
-        var record = await queryService.Handle(new GetLatestHealthRecordByBovineIdQuery(bovineId));
+        var user = HttpContext.Items["User"] as User;
+        if (user is null) return Unauthorized("User not found in context.");
+
+        var record = await queryService.Handle(new GetLatestHealthRecordByBovineIdQuery(bovineId, user.Id));
         if (record is null) return NotFound();
         return Ok(BovineHealthRecordResourceFromEntityAssembler.ToResourceFromEntity(record));
     }

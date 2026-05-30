@@ -120,6 +120,7 @@ public class AppDbContext : DbContext
         builder.Entity<BovineHealthRecord>().HasKey(r => r.Id);
         builder.Entity<BovineHealthRecord>().Property(r => r.Id).IsRequired().ValueGeneratedOnAdd();
         builder.Entity<BovineHealthRecord>().Property(r => r.BovineId).IsRequired().HasColumnName("bovine_id");
+        builder.Entity<BovineHealthRecord>().Property(r => r.UserId).IsRequired().HasColumnName("user_id");
         builder.Entity<BovineHealthRecord>().Property(r => r.DeviceId).IsRequired().HasMaxLength(100);
         builder.Entity<BovineHealthRecord>().Property(r => r.Temperature).IsRequired();
         builder.Entity<BovineHealthRecord>().Property(r => r.HeartRate).IsRequired();
