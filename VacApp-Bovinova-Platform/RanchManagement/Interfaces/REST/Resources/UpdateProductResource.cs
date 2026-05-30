@@ -1,6 +1,6 @@
 namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Resources;
 
-public record CreateProductResource(
+public record UpdateProductResource(
     string Name,
     int CategoryId,
     int Quantity,
