@@ -86,6 +86,7 @@ public class AppDbContext : DbContext
         builder.Entity<Product>().Property(f => f.Quantity).IsRequired();
         builder.Entity<Product>().Property(f => f.UserId).IsRequired();
         builder.Entity<Product>().Property(f => f.ExpirationDate).IsRequired(false);
+        builder.Entity<Product>().Property(f => f.Unit).IsRequired(false);
         builder.Entity<Product>()
             .HasOne(f => f.Category)
             .WithMany()
