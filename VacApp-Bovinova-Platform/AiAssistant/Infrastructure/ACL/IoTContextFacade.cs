@@ -9,9 +9,9 @@ public class IoTContextFacade(IBovineHealthRecordQueryService healthRecordQueryS
 {
     private const int MaxReadingsInContext = 5;
 
-    public async Task<string> GetBovineTelemetryContextAsync(int bovineId)
+    public async Task<string> GetBovineTelemetryContextAsync(int userId, int bovineId)
     {
-        var records = (await healthRecordQueryService.Handle(new GetHealthRecordsByBovineIdQuery(bovineId)))
+        var records = (await healthRecordQueryService.Handle(new GetHealthRecordsByBovineIdQuery(bovineId, userId)))
             .OrderByDescending(record => record.RecordedAt)
             .Take(MaxReadingsInContext)
             .ToList();

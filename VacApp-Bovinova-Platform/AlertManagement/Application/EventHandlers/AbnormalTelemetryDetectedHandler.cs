@@ -3,6 +3,7 @@ using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.Commands;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.ValueObjects;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Services;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Events;
+using VacApp_Bovinova_Platform.Shared.Domain.Model;
 
 namespace VacApp_Bovinova_Platform.AlertManagement.Application.EventHandlers;
 
@@ -32,9 +33,9 @@ public class AbnormalTelemetryDetectedHandler(IAlertCommandService alertCommandS
 
     private static UrgencyLevel DetermineUrgency(float temperature, float heartRate)
     {
-        // RED: multiple vitals out of range or extreme deviation
-        bool tempOutOfRange = temperature < 38.0f || temperature > 39.5f;
-        bool hrOutOfRange   = heartRate   < 40.0f || heartRate   > 80.0f;
+        // RED: both vitals out of range; YELLOW: a single vital out of range
+        bool tempOutOfRange = BovineVitalRanges.IsTemperatureOutOfRange(temperature);
+        bool hrOutOfRange   = BovineVitalRanges.IsHeartRateOutOfRange(heartRate);
 
         if (tempOutOfRange && hrOutOfRange) return UrgencyLevel.Red;
         return UrgencyLevel.Yellow;
@@ -43,10 +44,10 @@ public class AbnormalTelemetryDetectedHandler(IAlertCommandService alertCommandS
     private static string BuildMessage(float temperature, float heartRate)
     {
         var parts = new List<string>();
-        if (temperature < 38.0f) parts.Add($"temperatura baja ({temperature:F1}°C)");
-        if (temperature > 39.5f) parts.Add($"fiebre ({temperature:F1}°C)");
-        if (heartRate < 40.0f)   parts.Add($"bradicardia ({heartRate:F0} BPM)");
-        if (heartRate > 80.0f)   parts.Add($"taquicardia ({heartRate:F0} BPM)");
+        if (temperature < BovineVitalRanges.MinTemperature) parts.Add($"temperatura baja ({temperature:F1}°C)");
+        if (temperature > BovineVitalRanges.MaxTemperature) parts.Add($"fiebre ({temperature:F1}°C)");
+        if (heartRate < BovineVitalRanges.MinHeartRate)     parts.Add($"bradicardia ({heartRate:F0} BPM)");
+        if (heartRate > BovineVitalRanges.MaxHeartRate)     parts.Add($"taquicardia ({heartRate:F0} BPM)");
 
         return $"Anomalía biométrica detectada: {string.Join(", ", parts)}.";
     }

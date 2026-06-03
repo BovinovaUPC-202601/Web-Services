@@ -58,7 +58,7 @@ public class AIAssistantCommandService(
         var bovineContext = await ranchContextFacade.GetBovineContextAsync(command.UserId, command.BovineId);
         var analysisContext = await BuildPreviousAnalysisContext(command.BovineId);
         var alertContext = await alertContextFacade.GetBovineAlertContextAsync(command.UserId, command.BovineId);
-        var telemetryContext = await ioTContextFacade.GetBovineTelemetryContextAsync(command.BovineId);
+        var telemetryContext = await ioTContextFacade.GetBovineTelemetryContextAsync(command.UserId, command.BovineId);
         var systemPrompt = BuildBovineSystemPrompt(bovineContext, analysisContext, alertContext, telemetryContext);
         var response = EnsureResponse(await aiChatService.GenerateResponseAsync(systemPrompt, session.GetMessages(), command.Message));
 
