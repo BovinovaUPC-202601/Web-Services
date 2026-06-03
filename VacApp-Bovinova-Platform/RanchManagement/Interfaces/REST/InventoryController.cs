@@ -77,6 +77,15 @@ public class InventoryController(
         return Ok(resources);
     }
 
+    [HttpPut("categories/{id}")]
+    public async Task<IActionResult> UpdateCategory(int id, [FromBody] UpdateCategoryResource resource)
+    {
+        var command = UpdateCategoryCommandFromResourceAssembler.ToCommandFromResource(id, resource);
+        var result = await categoryCommandService.Handle(command);
+        if (result is null) return NotFound(new { message = "Category not found" });
+        return Ok(CategoryResourceFromEntityAssembler.ToResourceFromEntity(result));
+    }
+
     [HttpDelete("categories/{id}")]
     [SwaggerOperation(
         Summary = "Delete category",
@@ -148,6 +157,15 @@ public class InventoryController(
         if (result is null) return NotFound();
         var resources = ProductResourceFromEntityAssembler.ToResourceFromEntity(result);
         return Ok(resources);
+    }
+
+    [HttpPut("products/{id}")]
+    public async Task<IActionResult> UpdateProduct(int id, [FromBody] UpdateProductResource resource)
+    {
+        var command = UpdateProductCommandFromResourceAssembler.ToCommandFromResource(id, resource);
+        var result = await productCommandService.Handle(command);
+        if (result is null) return NotFound(new { message = "Product not found" });
+        return Ok(ProductResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
     [HttpDelete("products/{id}")]

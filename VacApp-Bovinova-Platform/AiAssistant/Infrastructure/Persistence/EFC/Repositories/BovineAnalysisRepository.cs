@@ -17,6 +17,14 @@ public class BovineAnalysisRepository(AppDbContext context)
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<BovineAnalysis>> FindByUserIdAndBovineIdAsync(int userId, int bovineId)
+    {
+        return await Context.Set<BovineAnalysis>()
+            .Where(analysis => analysis.UserId == userId && analysis.BovineId == bovineId)
+            .OrderByDescending(analysis => analysis.CreatedAt)
+            .ToListAsync();
+    }
+
     public async Task<BovineAnalysis?> FindLatestByBovineIdAsync(int bovineId)
     {
         return await Context.Set<BovineAnalysis>()

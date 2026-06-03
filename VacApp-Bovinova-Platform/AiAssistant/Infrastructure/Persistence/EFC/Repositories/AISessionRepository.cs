@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using VacApp_Bovinova_Platform.AIAssistant.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Model.Entities;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Repositories;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configuration;
@@ -8,7 +7,7 @@ using VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Repositorie
 namespace VacApp_Bovinova_Platform.AIAssistant.Infrastructure.Persistence.EFC.Repositories;
 
 public class AISessionRepository(AppDbContext context)
-    : BaseRepository<AISession>(context), IAISessionRepository
+    : BaseRepository<GeneralChatSession>(context), IAISessionRepository
 {
     public async Task<GeneralChatSession?> FindGeneralChatSessionByUserIdAsync(int userId)
     {
