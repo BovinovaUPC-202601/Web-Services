@@ -19,18 +19,19 @@ public class LmStudioVisionService(ILocalModelClient localModelClient) : IAIVisi
             : $"data:image/jpeg;base64,{imageBase64}";
 
         var prompt = """
-                     Analyze this bovine image using the provided ranch context.
-                     Return JSON only with this schema:
+                     Analiza esta imagen del bovino usando el contexto del rancho proporcionado.
+                     Responde siempre en español en los campos de texto del JSON.
+                     Devuelve únicamente JSON con este esquema:
                      {
                        "score": number,
-                       "visibleIssues": "string",
+                       "visibleIssues": "string en español",
                        "urgency": "GREEN|YELLOW|RED",
-                       "recommendation": "string",
+                       "recommendation": "string en español",
                        "confidence": number
                      }
-                     Do not provide a definitive veterinary diagnosis. Provide preventive observations only.
+                     No entregues un diagnóstico veterinario definitivo. Da solo observaciones preventivas y recomienda contactar a un veterinario cuando el riesgo sea serio.
 
-                     Context:
+                     Contexto:
                      """;
 
         var messages = new List<object>
@@ -38,7 +39,7 @@ public class LmStudioVisionService(ILocalModelClient localModelClient) : IAIVisi
             new
             {
                 role = "system",
-                content = "You are VacApp's bovine health assistant. You help detect visible warning signs, but you never provide definitive veterinary diagnoses."
+                content = "Eres el asistente de salud bovina de VacApp. Responde en español. Ayudas a detectar señales visuales de advertencia, pero nunca entregas diagnósticos veterinarios definitivos."
             },
             new
             {

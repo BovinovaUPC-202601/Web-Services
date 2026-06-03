@@ -15,6 +15,7 @@ public class AIAssistantCommandService(
     IAIChatService aiChatService,
     IAIVisionService aiVisionService,
     IRanchContextFacade ranchContextFacade,
+    IAlertContextFacade alertContextFacade,
     IUnitOfWork unitOfWork) : IAIAssistantCommandService
 {
     public async Task<string> Handle(SendGeneralChatCommand command)
@@ -52,7 +53,8 @@ public class AIAssistantCommandService(
 
         var bovineContext = await ranchContextFacade.GetBovineContextAsync(command.UserId, command.BovineId);
         var analysisContext = await BuildPreviousAnalysisContext(command.BovineId);
-        var systemPrompt = BuildBovineSystemPrompt(bovineContext, analysisContext);
+        var alertContext = await alertContextFacade.GetBovineAlertContextAsync(command.UserId, command.BovineId);
+        var systemPrompt = BuildBovineSystemPrompt(bovineContext, analysisContext, alertContext);
         var response = await aiChatService.GenerateResponseAsync(systemPrompt, session.GetMessages(), command.Message);
 
         session.AddMessage(new ChatMessage("user", command.Message, DateTime.UtcNow));
@@ -89,6 +91,7 @@ public class AIAssistantCommandService(
     {
         return $"""
                 You are VacApp's AI assistant for bovine ranch management.
+                Always answer in Spanish, using clear language for ranchers.
                 Answer using only the provided ranch context and general animal-care guidance.
                 Do not provide definitive veterinary diagnoses. Recommend contacting a veterinarian when symptoms or risk are serious.
                 If asked about IoT telemetry or alerts that are not present in the context, say that the backend does not have that data available yet.
@@ -98,16 +101,20 @@ public class AIAssistantCommandService(
                 """;
     }
 
-    private static string BuildBovineSystemPrompt(string bovineContext, string analysisContext)
+    private static string BuildBovineSystemPrompt(string bovineContext, string analysisContext, string alertContext)
     {
         return $"""
                 You are VacApp's AI assistant for a specific bovine.
-                Use the bovine context and previous visual analyses to answer.
+                Always answer in Spanish, using clear language for ranchers.
+                Use the bovine context, alert context, and previous visual analyses to answer.
                 Do not provide definitive veterinary diagnoses. Explain observations as preventive guidance and recommend a veterinarian for serious cases.
                 If biometric IoT telemetry is unavailable, state that clearly.
 
                 Bovine context:
                 {bovineContext}
+
+                Alert context:
+                {alertContext}
 
                 Previous visual analysis context:
                 {analysisContext}

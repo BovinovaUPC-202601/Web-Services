@@ -218,6 +218,7 @@ builder.Services.AddScoped<IAIVisionService, LmStudioVisionService>();
 builder.Services.AddScoped<IAISessionRepository, AISessionRepository>();
 builder.Services.AddScoped<IBovineAnalysisRepository, BovineAnalysisRepository>();
 builder.Services.AddScoped<IRanchContextFacade, RanchContextFacade>();
+builder.Services.AddScoped<IAlertContextFacade, AlertContextFacade>();
 builder.Services.AddScoped<IAIAssistantCommandService, AIAssistantCommandService>();
 
 

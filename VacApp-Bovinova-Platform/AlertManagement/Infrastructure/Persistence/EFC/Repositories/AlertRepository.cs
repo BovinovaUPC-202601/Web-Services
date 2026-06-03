@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.Aggregates;
+using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.ValueObjects;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Repositories;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configuration;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Repositories;
@@ -13,6 +14,14 @@ public class AlertRepository(AppDbContext context)
         => await Context.Set<Alert>()
             .Where(a => a.UserId == userId)
             .OrderByDescending(a => a.CreatedAt)
+            .ToListAsync();
+
+    public async Task<IEnumerable<Alert>> FindByUserIdAndBovineIdAsync(int userId, int bovineId, int limit)
+        => await Context.Set<Alert>()
+            .Where(a => a.UserId == userId && a.BovineId == bovineId)
+            .OrderBy(a => a.Status == AlertStatus.Read)
+            .ThenByDescending(a => a.CreatedAt)
+            .Take(limit)
             .ToListAsync();
 
     public async Task<Alert?> FindByIdAsync(int alertId)
