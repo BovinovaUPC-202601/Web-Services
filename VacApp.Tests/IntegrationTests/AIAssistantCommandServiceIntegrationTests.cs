@@ -18,6 +18,7 @@ public class AIAssistantCommandServiceIntegrationTests
     private readonly Mock<IAIVisionService> _visionServiceMock = new();
     private readonly Mock<IRanchContextFacade> _ranchContextFacadeMock = new();
     private readonly Mock<IAlertContextFacade> _alertContextFacadeMock = new();
+    private readonly Mock<IIoTContextFacade> _ioTContextFacadeMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
 
     [Fact]
@@ -199,6 +200,7 @@ public class AIAssistantCommandServiceIntegrationTests
             _visionServiceMock.Object,
             _ranchContextFacadeMock.Object,
             _alertContextFacadeMock.Object,
+            _ioTContextFacadeMock.Object,
             _unitOfWorkMock.Object);
     }
 }

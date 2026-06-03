@@ -16,8 +16,12 @@ public class AIAssistantCommandService(
     IAIVisionService aiVisionService,
     IRanchContextFacade ranchContextFacade,
     IAlertContextFacade alertContextFacade,
+    IIoTContextFacade ioTContextFacade,
     IUnitOfWork unitOfWork) : IAIAssistantCommandService
 {
+    private const string EmptyResponseFallback =
+        "No se pudo generar una respuesta en este momento. Por favor, intenta nuevamente.";
+
     public async Task<string> Handle(SendGeneralChatCommand command)
     {
         if (string.IsNullOrWhiteSpace(command.Message))
@@ -28,7 +32,7 @@ public class AIAssistantCommandService(
         session ??= new GeneralChatSession(command.UserId);
 
         var systemPrompt = BuildGeneralSystemPrompt(await ranchContextFacade.GetGeneralRanchContextAsync(command.UserId));
-        var response = await aiChatService.GenerateResponseAsync(systemPrompt, session.GetMessages(), command.Message);
+        var response = EnsureResponse(await aiChatService.GenerateResponseAsync(systemPrompt, session.GetMessages(), command.Message));
 
         session.AddMessage(new ChatMessage("user", command.Message, DateTime.UtcNow));
         session.AddMessage(new ChatMessage("assistant", response, DateTime.UtcNow));
@@ -54,8 +58,9 @@ public class AIAssistantCommandService(
         var bovineContext = await ranchContextFacade.GetBovineContextAsync(command.UserId, command.BovineId);
         var analysisContext = await BuildPreviousAnalysisContext(command.BovineId);
         var alertContext = await alertContextFacade.GetBovineAlertContextAsync(command.UserId, command.BovineId);
-        var systemPrompt = BuildBovineSystemPrompt(bovineContext, analysisContext, alertContext);
-        var response = await aiChatService.GenerateResponseAsync(systemPrompt, session.GetMessages(), command.Message);
+        var telemetryContext = await ioTContextFacade.GetBovineTelemetryContextAsync(command.BovineId);
+        var systemPrompt = BuildBovineSystemPrompt(bovineContext, analysisContext, alertContext, telemetryContext);
+        var response = EnsureResponse(await aiChatService.GenerateResponseAsync(systemPrompt, session.GetMessages(), command.Message));
 
         session.AddMessage(new ChatMessage("user", command.Message, DateTime.UtcNow));
         session.AddMessage(new ChatMessage("assistant", response, DateTime.UtcNow));
@@ -94,21 +99,21 @@ public class AIAssistantCommandService(
                 Always answer in Spanish, using clear language for ranchers.
                 Answer using only the provided ranch context and general animal-care guidance.
                 Do not provide definitive veterinary diagnoses. Recommend contacting a veterinarian when symptoms or risk are serious.
-                If asked about IoT telemetry or alerts that are not present in the context, say that the backend does not have that data available yet.
+                If the user asks about specific data that is not present in the provided context, say that the information is not available and suggest opening the corresponding bovine for detailed telemetry.
 
                 Ranch context:
                 {ranchContext}
                 """;
     }
 
-    private static string BuildBovineSystemPrompt(string bovineContext, string analysisContext, string alertContext)
+    private static string BuildBovineSystemPrompt(string bovineContext, string analysisContext, string alertContext, string telemetryContext)
     {
         return $"""
                 You are VacApp's AI assistant for a specific bovine.
                 Always answer in Spanish, using clear language for ranchers.
-                Use the bovine context, alert context, and previous visual analyses to answer.
+                Use the bovine context, alert context, IoT telemetry, and previous visual analyses to answer.
                 Do not provide definitive veterinary diagnoses. Explain observations as preventive guidance and recommend a veterinarian for serious cases.
-                If biometric IoT telemetry is unavailable, state that clearly.
+                When telemetry readings are out of the normal range, point it out clearly. If no telemetry is registered, say so instead of inventing values.
 
                 Bovine context:
                 {bovineContext}
@@ -116,10 +121,16 @@ public class AIAssistantCommandService(
                 Alert context:
                 {alertContext}
 
+                IoT telemetry context:
+                {telemetryContext}
+
                 Previous visual analysis context:
                 {analysisContext}
                 """;
     }
+
+    private static string EnsureResponse(string response)
+        => string.IsNullOrWhiteSpace(response) ? EmptyResponseFallback : response;
 
     private async Task<string> BuildPreviousAnalysisContext(int bovineId)
     {

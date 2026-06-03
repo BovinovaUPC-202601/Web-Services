@@ -47,11 +47,11 @@ using VacApp_Bovinova_Platform.AIAssistant.Domain.Repositories;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Services;
 using VacApp_Bovinova_Platform.AIAssistant.Application.ACL;
 using VacApp_Bovinova_Platform.AIAssistant.Application.Internal.CommandServices;
+using VacApp_Bovinova_Platform.AIAssistant.Application.Internal.QueryServices;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.ACL;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Clients;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Configuration;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Services;
-using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.Persistence.EFC.Configuration;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.Persistence.EFC.Repositories;
 
 DotEnv.Load();
@@ -219,7 +219,9 @@ builder.Services.AddScoped<IAISessionRepository, AISessionRepository>();
 builder.Services.AddScoped<IBovineAnalysisRepository, BovineAnalysisRepository>();
 builder.Services.AddScoped<IRanchContextFacade, RanchContextFacade>();
 builder.Services.AddScoped<IAlertContextFacade, AlertContextFacade>();
+builder.Services.AddScoped<IIoTContextFacade, IoTContextFacade>();
 builder.Services.AddScoped<IAIAssistantCommandService, AIAssistantCommandService>();
+builder.Services.AddScoped<IAIAssistantQueryService, AIAssistantQueryService>();
 
 
 /////////////////////////End Database Configuration/////////////////////////
@@ -231,7 +233,6 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<AppDbContext>();
     context.Database.EnsureCreated();
-    context.EnsureAIAssistantTablesCreated();
 }
 
 // Configure the HTTP request pipeline.

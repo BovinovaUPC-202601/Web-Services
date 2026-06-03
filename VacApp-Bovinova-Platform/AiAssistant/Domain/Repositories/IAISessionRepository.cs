@@ -1,10 +1,9 @@
-using VacApp_Bovinova_Platform.AIAssistant.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Model.Entities;
 using VacApp_Bovinova_Platform.Shared.Domain.Repositories;
 
 namespace VacApp_Bovinova_Platform.AIAssistant.Domain.Repositories;
 
-public interface IAISessionRepository : IBaseRepository<AISession>
+public interface IAISessionRepository : IBaseRepository<GeneralChatSession>
 {
     Task<GeneralChatSession?> FindGeneralChatSessionByUserIdAsync(int userId);
     Task<BovineChatSession?> FindBovineChatSessionByUserIdAndBovineIdAsync(int userId, int bovineId);

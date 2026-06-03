@@ -9,7 +9,6 @@ using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.ValueObjects;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using VacApp_Bovinova_Platform.AIAssistant.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Model.Entities;
 
 namespace VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configuration;
@@ -23,7 +22,6 @@ public class AppDbContext : DbContext
     public DbSet<Product> Products { get; set; }
     public DbSet<BovineHealthRecord> BovineHealthRecords { get; set; }
     public DbSet<Alert> Alerts { get; set; }
-    public DbSet<AISession> AISessions { get; set; }
     public DbSet<GeneralChatSession> GeneralChatSessions { get; set; }
     public DbSet<BovineChatSession> BovineChatSessions { get; set; }
     public DbSet<BovineAnalysis> BovineAnalyses { get; set; }
@@ -147,15 +145,6 @@ public class AppDbContext : DbContext
         builder.Entity<Alert>().Property(a => a.CreatedAt).IsRequired().HasColumnName("created_at");
 
         /* AI Assistant */
-        // AI Session
-        builder.Entity<AISession>().HasKey(s => s.Id);
-        builder.Entity<AISession>().Property(s => s.Id).IsRequired().ValueGeneratedOnAdd();
-        builder.Entity<AISession>().Property(s => s.UserId).IsRequired().HasColumnName("user_id");
-        builder.Entity<AISession>().Property(s => s.BovineId).HasColumnName("bovine_id");
-        builder.Entity<AISession>().Property(s => s.SessionType).IsRequired();
-        builder.Entity<AISession>().Property(s => s.CreatedAt).IsRequired();
-        builder.Entity<AISession>().Property(s => s.UpdatedAt).IsRequired();
-
         // General Chat Session
         builder.Entity<GeneralChatSession>().HasKey(s => s.Id);
         builder.Entity<GeneralChatSession>().Property(s => s.Id).IsRequired().ValueGeneratedOnAdd();

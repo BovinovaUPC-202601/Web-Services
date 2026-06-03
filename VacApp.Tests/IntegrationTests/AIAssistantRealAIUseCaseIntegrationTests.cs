@@ -53,6 +53,7 @@ public class AIAssistantRealAIUseCaseIntegrationTests(ITestOutputHelper output)
             Mock.Of<IAIVisionService>(),
             ranchContextFacadeMock.Object,
             alertContextFacadeMock.Object,
+            Mock.Of<IIoTContextFacade>(),
             unitOfWork);
 
         // Act
@@ -140,6 +141,7 @@ public class AIAssistantRealAIUseCaseIntegrationTests(ITestOutputHelper output)
             Mock.Of<IAIVisionService>(),
             ranchContextFacadeMock.Object,
             alertContextFacadeMock.Object,
+            Mock.Of<IIoTContextFacade>(),
             unitOfWork);
 
         // Act
