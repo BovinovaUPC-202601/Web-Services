@@ -203,7 +203,9 @@ builder.Services.AddSingleton(new MqttSettings
     Password            = Environment.GetEnvironmentVariable("MQTT_PASSWORD") ?? string.Empty,
     ClientId            = Environment.GetEnvironmentVariable("MQTT_CLIENT_ID") ?? "vacapp-backend",
     TelemetryTopic      = Environment.GetEnvironmentVariable("MQTT_TELEMETRY_TOPIC") ?? "vacapp/telemetry",
-    ResponseTopicPrefix = Environment.GetEnvironmentVariable("MQTT_RESPONSE_TOPIC_PREFIX") ?? "vacapp/telemetry/response"
+    ResponseTopicPrefix = Environment.GetEnvironmentVariable("MQTT_RESPONSE_TOPIC_PREFIX") ?? "vacapp/telemetry/response",
+    UseTls                     = bool.TryParse(Environment.GetEnvironmentVariable("MQTT_USE_TLS"), out var mqttTls) && mqttTls,
+    AllowUntrustedCertificates = bool.TryParse(Environment.GetEnvironmentVariable("MQTT_TLS_ALLOW_UNTRUSTED"), out var mqttUntrusted) && mqttUntrusted
 });
 builder.Services.AddHostedService<MqttTelemetryConsumer>();
 

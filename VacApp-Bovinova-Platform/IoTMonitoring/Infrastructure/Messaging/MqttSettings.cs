@@ -14,5 +14,11 @@ public class MqttSettings
     public string TelemetryTopic      = "vacapp/telemetry";
     public string ResponseTopicPrefix = "vacapp/telemetry/response";
 
+    // TLS — required when the broker listens on 8883 (e.g. Mosquitto on an Azure VM).
+    public bool UseTls                    = false;
+    // Allow self-signed / untrusted certificates (dev only). Leave false in production
+    // when the broker uses a CA-issued certificate (e.g. Let's Encrypt).
+    public bool AllowUntrustedCertificates = false;
+
     public bool HasCredentials => !string.IsNullOrWhiteSpace(Username);
 }

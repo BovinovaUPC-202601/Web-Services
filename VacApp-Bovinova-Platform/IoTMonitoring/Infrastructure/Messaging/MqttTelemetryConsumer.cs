@@ -88,6 +88,20 @@ public class MqttTelemetryConsumer : BackgroundService
         if (_settings.HasCredentials)
             builder = builder.WithCredentials(_settings.Username, _settings.Password);
 
+        if (_settings.UseTls)
+        {
+            builder = builder.WithTlsOptions(o =>
+            {
+                o.UseTls(true);
+                if (_settings.AllowUntrustedCertificates)
+                {
+                    o.WithAllowUntrustedCertificates(true);
+                    o.WithIgnoreCertificateChainErrors(true);
+                    o.WithIgnoreCertificateRevocationErrors(true);
+                }
+            });
+        }
+
         return builder.Build();
     }
 
