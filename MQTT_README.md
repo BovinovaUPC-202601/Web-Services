@@ -82,7 +82,42 @@ Se agregó la columna `battery_level` al modelo `BovineHealthRecord`. El proyect
 columna automáticamente**. Para aplicar el cambio en desarrollo, borrá la tabla
 `bovine_health_records` (o la base) y dejá que el backend la recree al arrancar.
 
-## Despliegue: Mosquitto en una VM de Azure (todo en la nube, TLS)
+## Despliegue (elegido): HiveMQ Cloud (broker gestionado, TLS)
+
+Para el setup desplegado se usa **HiveMQ Cloud** (free tier): broker gestionado,
+alcanzable desde Azure y desde el simulador, con TLS de fábrica. No requiere VM,
+certificados ni mantenimiento, y no toca el código (el backend ya soporta TLS).
+
+### 1. Crear el cluster
+- Cuenta en https://hivemq.com → **Create free cluster**.
+- Anotar: **URL** (ej. `xxxx.s1.eu.hivemq.cloud`), **puerto 8883**.
+- En *Access Management* → crear credencial **usuario + password**.
+
+### 2. Variables de entorno del backend (Azure App Service → Configuration)
+```
+MQTT_HOST=xxxx.s1.eu.hivemq.cloud
+MQTT_PORT=8883
+MQTT_USE_TLS=true
+MQTT_TLS_ALLOW_UNTRUSTED=false   # HiveMQ tiene certificado válido (CA pública)
+MQTT_USERNAME=<tu-user>
+MQTT_PASSWORD=<tu-pass>
+```
+
+### 3. Simulador (desde tu PC, apuntando al cloud)
+```bash
+python simulator.py --host xxxx.s1.eu.hivemq.cloud --port 8883 --tls \
+  --username <tu-user> --password <tu-pass>
+```
+(No se usa `--tls-insecure`: el certificado de HiveMQ es válido y valida la cadena.)
+
+### Límites del free tier
+- 100 conexiones simultáneas (usás ~2: backend + simulador).
+- ~10 GB de tráfico/mes (la telemetría son bytes; imposible de tocar en un TB).
+- Sin tarjeta de crédito → no puede cobrar de sorpresa.
+
+---
+
+## Alternativa: Mosquitto en una VM de Azure (todo en la nube, TLS)
 
 Cuando el backend está desplegado (Azure App Service), no puede llegar a un broker
 local. El broker corre en una **VM de Azure** (B1s, cubierta por el crédito de
