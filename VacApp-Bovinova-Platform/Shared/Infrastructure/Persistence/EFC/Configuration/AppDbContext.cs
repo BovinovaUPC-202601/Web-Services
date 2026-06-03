@@ -124,6 +124,7 @@ public class AppDbContext : DbContext
         builder.Entity<BovineHealthRecord>().Property(r => r.DeviceId).IsRequired().HasMaxLength(100);
         builder.Entity<BovineHealthRecord>().Property(r => r.Temperature).IsRequired();
         builder.Entity<BovineHealthRecord>().Property(r => r.HeartRate).IsRequired();
+        builder.Entity<BovineHealthRecord>().Property(r => r.BatteryLevel).IsRequired().HasColumnName("battery_level");
         builder.Entity<BovineHealthRecord>().Property(r => r.IsAlert).IsRequired();
         builder.Entity<BovineHealthRecord>().Property(r => r.RecordedAt).IsRequired();
         builder.Entity<BovineHealthRecord>()

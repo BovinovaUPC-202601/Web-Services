@@ -11,7 +11,7 @@ namespace VacApp.Tests.UnitTests
             // Arrange — ESP32 payload carries the owning rancher's id
             var command = new CreateBovineHealthRecordCommand(
                 BovineId: 1, UserId: 42, DeviceId: "esp32-001",
-                Temperature: 38.5f, HeartRate: 60f);
+                Temperature: 38.5f, HeartRate: 60f, BatteryLevel: 90);
 
             // Act
             var record = new BovineHealthRecord(command);
@@ -19,6 +19,7 @@ namespace VacApp.Tests.UnitTests
             // Assert
             Assert.Equal(1, record.BovineId);
             Assert.Equal(42, record.UserId);
+            Assert.Equal(90, record.BatteryLevel);
             Assert.False(record.IsAlert);
         }
 
@@ -27,7 +28,7 @@ namespace VacApp.Tests.UnitTests
         {
             var command = new CreateBovineHealthRecordCommand(
                 BovineId: 1, UserId: 42, DeviceId: "esp32-001",
-                Temperature: 41.0f, HeartRate: 120f);
+                Temperature: 41.0f, HeartRate: 120f, BatteryLevel: 75);
 
             var record = new BovineHealthRecord(command);
 

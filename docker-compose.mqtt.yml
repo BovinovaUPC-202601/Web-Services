@@ -1,0 +1,19 @@
+# Local MQTT broker for VacApp IoT telemetry.
+# Run:   docker compose -f docker-compose.mqtt.yml up -d
+# Stop:  docker compose -f docker-compose.mqtt.yml down
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: vacapp-mosquitto
+    ports:
+      - "1883:1883"   # MQTT
+      - "9001:9001"   # MQTT over WebSocket (optional, for browser tooling)
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    restart: unless-stopped
+
+volumes:
+  mosquitto-data:
+  mosquitto-log:

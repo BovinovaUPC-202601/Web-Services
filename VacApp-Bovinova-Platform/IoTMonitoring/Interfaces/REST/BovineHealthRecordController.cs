@@ -2,7 +2,6 @@ using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Attributes;
-using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Services;
 using VacApp_Bovinova_Platform.IoTMonitoring.Interfaces.REST.Resources;
@@ -14,37 +13,12 @@ namespace VacApp_Bovinova_Platform.IoTMonitoring.Interfaces.REST;
 [Route("api/v1/iot-monitoring")]
 [Produces(MediaTypeNames.Application.Json)]
 public class BovineHealthRecordController(
-    IBovineHealthRecordCommandService commandService,
-    IBovineHealthRecordQueryService   queryService)
+    IBovineHealthRecordQueryService queryService)
     : ControllerBase
 {
-    /// <summary>
-    /// Receives a telemetry reading from an ESP32 device.
-    /// AllowAnonymous — ESP32 cannot use JWT.
-    /// Returns alarm flag so the device can activate its LED actuator.
-    /// </summary>
-    [AllowAnonymous]
-    [HttpPost("telemetry")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<TelemetryResponseResource>> PostTelemetry(
-        [FromBody] CreateBovineHealthRecordResource resource)
-    {
-        var command = CreateBovineHealthRecordCommandFromResourceAssembler.ToCommandFromResource(resource);
-        var record  = await commandService.Handle(command);
-
-        if (record is null) return BadRequest("Could not save telemetry record.");
-
-        var response = new TelemetryResponseResource(
-            record.Id,
-            record.IsAlert,
-            record.IsAlert
-                ? "ALERT: vital signs outside normal bovine range."
-                : "OK: vital signs within normal range.");
-
-        return CreatedAtAction(nameof(GetLatestByBovineId),
-            new { bovineId = record.BovineId }, response);
-    }
+    // NOTE: telemetry ingestion is NOT exposed over HTTP. Per constraint CON2 the
+    // collar communicates exclusively over MQTT, so readings arrive through
+    // MqttTelemetryConsumer. This controller only serves read queries to the apps.
 
     /// <summary>
     /// Returns the full telemetry history for a bovine. Requires JWT.

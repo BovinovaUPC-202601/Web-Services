@@ -9,14 +9,15 @@ namespace VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates;
 /// </summary>
 public class BovineHealthRecord
 {
-    public int      Id          { get; private set; }
-    public int      BovineId    { get; private set; }
-    public int      UserId      { get; private set; }   // owner (rancher) of the bovine
-    public string   DeviceId    { get; private set; }
-    public float    Temperature { get; private set; }   // °C
-    public float    HeartRate   { get; private set; }   // bpm
-    public bool     IsAlert     { get; private set; }
-    public DateTime RecordedAt  { get; private set; }
+    public int      Id           { get; private set; }
+    public int      BovineId     { get; private set; }
+    public int      UserId       { get; private set; }   // owner (rancher) of the bovine
+    public string   DeviceId     { get; private set; }
+    public float    Temperature  { get; private set; }   // °C
+    public float    HeartRate    { get; private set; }   // bpm
+    public int      BatteryLevel { get; private set; }   // collar battery charge, 0–100 %
+    public bool     IsAlert      { get; private set; }
+    public DateTime RecordedAt   { get; private set; }
 
     protected BovineHealthRecord()
     {
@@ -25,13 +26,14 @@ public class BovineHealthRecord
 
     public BovineHealthRecord(CreateBovineHealthRecordCommand command)
     {
-        BovineId    = command.BovineId;
-        UserId      = command.UserId;
-        DeviceId    = command.DeviceId;
-        Temperature = command.Temperature;
-        HeartRate   = command.HeartRate;
-        RecordedAt  = DateTime.UtcNow;
-        IsAlert     = EvaluateAlert(command.Temperature, command.HeartRate);
+        BovineId     = command.BovineId;
+        UserId       = command.UserId;
+        DeviceId     = command.DeviceId;
+        Temperature  = command.Temperature;
+        HeartRate    = command.HeartRate;
+        BatteryLevel = command.BatteryLevel;
+        RecordedAt   = DateTime.UtcNow;
+        IsAlert      = EvaluateAlert(command.Temperature, command.HeartRate);
     }
 
     /// <summary>
