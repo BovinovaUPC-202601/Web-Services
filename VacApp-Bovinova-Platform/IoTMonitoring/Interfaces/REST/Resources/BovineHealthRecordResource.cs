@@ -9,6 +9,7 @@ public record BovineHealthRecordResource(
     string   DeviceId,
     float    Temperature,
     float    HeartRate,
+    int      BatteryLevel,
     bool     IsAlert,
     DateTime RecordedAt
 );

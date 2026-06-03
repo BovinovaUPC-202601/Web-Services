@@ -42,6 +42,7 @@ using VacApp_Bovinova_Platform.IoTMonitoring.Application.Internal.QueryServices;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Repositories;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Services;
 using VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Persistence.EFC.Repositories;
+using VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Messaging;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Media.Local;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Repositories;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Services;
@@ -193,6 +194,21 @@ builder.Services.AddScoped<ICampaignQueryService, CampaignQueryService>();
 builder.Services.AddScoped<IBovineHealthRecordRepository, BovineHealthRecordRepository>();
 builder.Services.AddScoped<IBovineHealthRecordCommandService, BovineHealthRecordCommandService>();
 builder.Services.AddScoped<IBovineHealthRecordQueryService, BovineHealthRecordQueryService>();
+
+// MQTT telemetry ingestion (CON2: collar communicates exclusively over MQTT)
+builder.Services.AddSingleton(new MqttSettings
+{
+    Host                = Environment.GetEnvironmentVariable("MQTT_HOST") ?? "localhost",
+    Port                = int.TryParse(Environment.GetEnvironmentVariable("MQTT_PORT"), out var mqttPort) ? mqttPort : 1883,
+    Username            = Environment.GetEnvironmentVariable("MQTT_USERNAME") ?? string.Empty,
+    Password            = Environment.GetEnvironmentVariable("MQTT_PASSWORD") ?? string.Empty,
+    ClientId            = Environment.GetEnvironmentVariable("MQTT_CLIENT_ID") ?? "vacapp-backend",
+    TelemetryTopic      = Environment.GetEnvironmentVariable("MQTT_TELEMETRY_TOPIC") ?? "vacapp/telemetry",
+    ResponseTopicPrefix = Environment.GetEnvironmentVariable("MQTT_RESPONSE_TOPIC_PREFIX") ?? "vacapp/telemetry/response",
+    UseTls                     = bool.TryParse(Environment.GetEnvironmentVariable("MQTT_USE_TLS"), out var mqttTls) && mqttTls,
+    AllowUntrustedCertificates = bool.TryParse(Environment.GetEnvironmentVariable("MQTT_TLS_ALLOW_UNTRUSTED"), out var mqttUntrusted) && mqttUntrusted
+});
+builder.Services.AddHostedService<MqttTelemetryConsumer>();
 
 //Alert Management BC
 builder.Services.AddScoped<IAlertRepository, AlertRepository>();

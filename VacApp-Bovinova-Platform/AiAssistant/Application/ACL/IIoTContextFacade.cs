@@ -6,5 +6,5 @@ namespace VacApp_Bovinova_Platform.AIAssistant.Application.ACL;
 /// </summary>
 public interface IIoTContextFacade
 {
-    Task<string> GetBovineTelemetryContextAsync(int bovineId);
+    Task<string> GetBovineTelemetryContextAsync(int userId, int bovineId);
 }
