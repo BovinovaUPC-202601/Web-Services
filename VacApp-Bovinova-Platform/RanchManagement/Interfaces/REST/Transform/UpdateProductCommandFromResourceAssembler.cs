@@ -3,15 +3,15 @@ using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Resources;
 
 namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Transform;
 
-public static class CreateProductCommandFromResourceAssembler
+public static class UpdateProductCommandFromResourceAssembler
 {
-    public static CreateProductCommand ToCommandFromResource(CreateProductResource resource, int userId)
+    public static UpdateProductCommand ToCommandFromResource(int id, UpdateProductResource resource)
     {
-        return new CreateProductCommand(
+        return new UpdateProductCommand(
+            id,
             resource.Name,
             resource.CategoryId,
             resource.Quantity,
-            userId,
             resource.ExpirationDate,
             resource.Unit
         );

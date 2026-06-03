@@ -26,16 +26,18 @@ public class Product
     public int UserId { get; private set; }
 
     public DateOnly? ExpirationDate { get; private set; }
+    public string? Unit { get; private set; }
 
     private Product() { Name = string.Empty; }
 
-    public Product(string name, int categoryId, int quantity, int userId, DateOnly? expirationDate = null)
+    public Product(string name, int categoryId, int quantity, int userId, DateOnly? expirationDate = null, string? unit = null)
     {
         Name = name;
         CategoryId = categoryId;
         Quantity = quantity;
         UserId = userId;
         ExpirationDate = expirationDate;
+        Unit = unit;
     }
 
     public Product(CreateProductCommand command)
@@ -45,6 +47,7 @@ public class Product
         Quantity = command.Quantity;
         UserId = command.UserId;
         ExpirationDate = command.ExpirationDate;
+        Unit = command.Unit;
     }
 
     public void Update(UpdateProductCommand command)
@@ -53,5 +56,6 @@ public class Product
         CategoryId = command.CategoryId;
         Quantity = command.Quantity;
         ExpirationDate = command.ExpirationDate;
+        Unit = command.Unit;
     }
 }

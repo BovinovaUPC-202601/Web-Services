@@ -6,4 +6,5 @@ public record ProductResource(
     int CategoryId,
     int Quantity,
     int UserId,
-    DateOnly? ExpirationDate);
+    DateOnly? ExpirationDate,
+    string? Unit = null);
