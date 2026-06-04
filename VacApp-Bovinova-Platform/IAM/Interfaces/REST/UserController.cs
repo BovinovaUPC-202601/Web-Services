@@ -13,6 +13,9 @@ using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Services;
 using VacApp_Bovinova_Platform.StaffAdministration.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
+using VacApp_Bovinova_Platform.IAM.Domain.Repositories;
+using VacApp_Bovinova_Platform.IAM.Interfaces.REST.Resources;
+
 
 namespace VacApp_Bovinova_Platform.IAM.Interfaces.REST
 {
@@ -24,6 +27,7 @@ namespace VacApp_Bovinova_Platform.IAM.Interfaces.REST
     public class UserController(
         IUserCommandService commandService,
         IUserQueryService queryService,
+        IUserRepository userRepository,
         IBovineQueryService bovineQueryService,
         ICampaignQueryService campaignQueryService,
     IProductQueryService productQueryService,
@@ -139,7 +143,7 @@ namespace VacApp_Bovinova_Platform.IAM.Interfaces.REST
 
             user.ChangeSubscription(resource.SubscriptionPlan);
 
-            await commandService.UpdateAsync(user);
+            await userRepository.UpdateAsync(user);
 
             return Ok(new
             {
