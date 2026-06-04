@@ -69,6 +69,10 @@ public class AppDbContext : DbContext
         builder.Entity<Bovine>().Property(f => f.BovineImg).IsRequired();
         builder.Entity<Bovine>().Property(f => f.StableId).IsRequired();
         builder.Entity<Bovine>().Property(f => f.UserId).HasColumnName("user_id").IsRequired();
+        builder.Entity<Bovine>().Property(f => f.MinTemperature).IsRequired();
+        builder.Entity<Bovine>().Property(f => f.MaxTemperature).IsRequired();
+        builder.Entity<Bovine>().Property(f => f.MinHeartRate).IsRequired();
+        builder.Entity<Bovine>().Property(f => f.MaxHeartRate).IsRequired();
 
         // Category
         builder.Entity<Category>().HasKey(f => f.Id);

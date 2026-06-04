@@ -36,13 +36,30 @@ public class Bovine
 
     public int UserId { get; set; }
 
+    [Required]
+    public double MinTemperature { get; private set; }
+
+    [Required]
+    public double MaxTemperature { get; private set; }
+
+    [Required]
+    public int MinHeartRate { get; private set; }
+
+    [Required]
+    public int MaxHeartRate { get; private set; }
+    // -------------------------
+
     private Bovine()
     {
         Name = "";
         Gender = "Male";
+        MinTemperature = 38.0;
+        MaxTemperature = 39.3;
+        MinHeartRate = 40;
+        MaxHeartRate = 80;
     }
 
-    public Bovine(string name, string gender, DateOnly birthDate, string breed, int stableId, string bovineImg, int userId)
+    public Bovine(string name, string gender, DateOnly birthDate, string breed, int stableId, string bovineImg, int userId, double minTemperature = 38.0, double maxTemperature = 39.3, int minHeartRate = 40, int maxHeartRate = 80)
     {
         Name = name;
         Gender = gender;
@@ -51,6 +68,10 @@ public class Bovine
         BovineImg = bovineImg;
         StableId = stableId;
         UserId = userId;
+        MinTemperature = minTemperature;
+        MaxTemperature = maxTemperature;
+        MinHeartRate = minHeartRate;
+        MaxHeartRate = maxHeartRate;
     }
 
     // Constructor with parameters
@@ -66,6 +87,11 @@ public class Bovine
         BovineImg = command.BovineImg;
         StableId = command.StableId;
         UserId = command.UserId;
+
+        MinTemperature = command.MinTemperature != 0 ? command.MinTemperature : 38.0;
+        MaxTemperature = command.MaxTemperature != 0 ? command.MaxTemperature : 39.3;
+        MinHeartRate = command.MinHeartRate != 0 ? command.MinHeartRate : 40;
+        MaxHeartRate = command.MaxHeartRate != 0 ? command.MaxHeartRate : 80;
     }
 
     //Update Bovine
@@ -81,5 +107,9 @@ public class Bovine
         if (command.BirthDate.HasValue) BirthDate = command.BirthDate.Value;
         if (command.Breed is not null) Breed = command.Breed;
         if (command.StableId.HasValue) StableId = command.StableId.Value;
+        if (command.MinTemperature.HasValue) MinTemperature = command.MinTemperature.Value;
+        if (command.MaxTemperature.HasValue) MaxTemperature = command.MaxTemperature.Value;
+        if (command.MinHeartRate.HasValue) MinHeartRate = command.MinHeartRate.Value;
+        if (command.MaxHeartRate.HasValue) MaxHeartRate = command.MaxHeartRate.Value;
     }
 }
