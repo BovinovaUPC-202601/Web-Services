@@ -7,5 +7,9 @@ public record UpdateBovineCommand(
     DateOnly? BirthDate = null,
     string? Breed = null,
     int? UserId = null,
-    int? StableId = null
+    int? StableId = null,
+    double? MinTemperature = null,
+    double? MaxTemperature = null,
+    int? MinHeartRate = null,
+    int? MaxHeartRate = null
 );

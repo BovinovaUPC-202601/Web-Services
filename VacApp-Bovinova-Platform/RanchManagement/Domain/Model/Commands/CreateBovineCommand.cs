@@ -8,5 +8,9 @@ public record CreateBovineCommand(
     int StableId,
     string BovineImg,
     int UserId,
-    Stream FileData
+    Stream FileData,
+    double MinTemperature = 0,
+    double MaxTemperature = 0,
+    int MinHeartRate = 0,
+    int MaxHeartRate = 0
     );

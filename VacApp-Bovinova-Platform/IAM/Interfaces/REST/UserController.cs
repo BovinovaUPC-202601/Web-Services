@@ -93,9 +93,10 @@ namespace VacApp_Bovinova_Platform.IAM.Interfaces.REST
             var totalStaff = staff.Count();
 
             // Próximas campañas
+            var today = DateOnly.FromDateTime(DateTime.Now);
             var nextCampaigns = campaigns
-                    .Where(c => c.StartDate >= DateOnly.FromDateTime(DateTime.Now))
-                    .Select(c => new CampaignInfoResource(c.Id, c.Name, c.StartDate))
+                    .Where(c => c.EndDate >= today)
+                    .Select(c => new CampaignInfoResource(c.Id, c.Name, c.StartDate, c.EndDate))
                     .ToArray();
 
             // Build and return the response
