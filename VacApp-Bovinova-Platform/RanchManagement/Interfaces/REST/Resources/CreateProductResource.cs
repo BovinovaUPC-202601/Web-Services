@@ -4,4 +4,5 @@ public record CreateProductResource(
     string Name,
     int CategoryId,
     int Quantity,
-    DateOnly? ExpirationDate);
+    DateOnly? ExpirationDate,
+    string? Unit = null);

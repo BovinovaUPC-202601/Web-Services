@@ -13,7 +13,8 @@ public static class ProductResourceFromEntityAssembler
             entity.CategoryId,
             entity.Quantity,
             entity.UserId,
-            entity.ExpirationDate
+            entity.ExpirationDate,
+            entity.Unit
         );
     }
 }

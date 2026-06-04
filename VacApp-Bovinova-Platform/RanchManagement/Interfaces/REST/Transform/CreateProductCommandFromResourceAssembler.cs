@@ -12,7 +12,8 @@ public static class CreateProductCommandFromResourceAssembler
             resource.CategoryId,
             resource.Quantity,
             userId,
-            resource.ExpirationDate
+            resource.ExpirationDate,
+            resource.Unit
         );
     }
 }

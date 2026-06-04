@@ -51,14 +51,33 @@ public class CampaignController(ICampaignCommandService campaignCommandService, 
         return Ok(campaignResources);
     }
 
+    [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> UpdateCampaign([FromRoute] int id, [FromBody] UpdateCampaignResource resource)
+    {
+        // Validación temprana antes de llegar al servicio.
+        if (resource.EndDate < resource.StartDate)
+            return BadRequest(new { message = "La fecha de fin no puede ser anterior a la fecha de inicio." });
+
+        var command = UpdateCampaignCommandFromResourceAssembler.ToCommandFromResource(id, resource);
+        var campaign = await campaignCommandService.Handle(command);
+
+        if (campaign is null)
+            return NotFound(new { message = "Campaign not found" });
+
+        return Ok(CampaignResourceFromEntityAssembler.ToResourceFromEntity(campaign));
+    }
+
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteCampaign([FromRoute] int id)
     {
-        var campaigns = await campaignCommandService.Handle(new DeleteCampaignCommand(id));
+        var deleted = await campaignCommandService.Handle(new DeleteCampaignCommand(id));
 
-        if (!campaigns.Any())
+        if (!deleted)
             return NotFound(new { message = "Campaign not found" });
 
         return Ok(new { message = "Deleted successfully" });

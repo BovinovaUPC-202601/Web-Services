@@ -24,22 +24,43 @@ public class CampaignCommandService(ICampaignRepository campaignRepository, IUni
         return campaign;
     }
 
-    public async Task<IEnumerable<Campaign>> Handle(DeleteCampaignCommand command)
+    public async Task<Campaign?> Handle(UpdateCampaignCommand command)
     {
-        var campaign = await campaignRepository.FindByIdAsync(command.id);
-        if (campaign == null) throw new KeyNotFoundException($"Campaign with id {command.id} not found");
+        var campaign = await campaignRepository.FindByIdAsync(command.Id);
+        if (campaign is null) return null;
 
-        campaignRepository.Remove(campaign);
-        var campaigns = await campaignRepository.ListAsync();
+        // Evita guardar campañas con rangos de fechas inconsistentes.
+        if (command.EndDate < command.StartDate)
+            throw new ArgumentException("EndDate no puede ser anterior a StartDate.");
+
+        campaign.Update(command);
+
         try
         {
+            campaignRepository.Update(campaign);
             await unitOfWork.CompleteAsync();
-            return campaigns;
+            return campaign;
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            Console.WriteLine(e);
-            throw;
+            return null;
+        }
+    }
+
+    public async Task<bool> Handle(DeleteCampaignCommand command)
+    {
+        var campaign = await campaignRepository.FindByIdAsync(command.id);
+        if (campaign is null) return false;
+
+        try
+        {
+            campaignRepository.Remove(campaign);
+            await unitOfWork.CompleteAsync();
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 }

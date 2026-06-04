@@ -1,12 +1,9 @@
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Aggregates;
+using VacApp_Bovinova_Platform.Shared.Domain.Repositories;
 
 namespace VacApp_Bovinova_Platform.RanchManagement.Domain.Repositories;
 
-public interface ICategoryRepository
+public interface ICategoryRepository : IBaseRepository<Category>
 {
-    Task<Category?> FindByIdAsync(int id);
     Task<IEnumerable<Category>> FindByUserIdAsync(int userId);
-    Task AddAsync(Category category);
-    void Update(Category category);
-    void Remove(Category category);
 }
