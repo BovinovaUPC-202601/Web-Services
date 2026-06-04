@@ -7,4 +7,8 @@ public record BovineResource(
     DateOnly BirthDate,
     string Breed,
     string BovineImg,
-    int StableId);
+    int StableId,
+    double MinTemperature,
+    double MaxTemperature,
+    int MinHeartRate,
+    int MaxHeartRate);
