@@ -58,7 +58,6 @@ public class RanchContextFacade(
         context.AppendLine($"Breed: {bovine.Breed}");
         context.AppendLine($"Birth date: {bovine.BirthDate:yyyy-MM-dd}");
         context.AppendLine($"Stable id: {bovine.StableId}");
-        context.AppendLine("Biometric IoT telemetry is not available because IoTMonitoring is not implemented in this backend yet.");
         return context.ToString();
     }
 }

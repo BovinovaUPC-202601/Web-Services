@@ -17,6 +17,8 @@ public class AIAssistantCommandServiceIntegrationTests
     private readonly Mock<IAIChatService> _chatServiceMock = new();
     private readonly Mock<IAIVisionService> _visionServiceMock = new();
     private readonly Mock<IRanchContextFacade> _ranchContextFacadeMock = new();
+    private readonly Mock<IAlertContextFacade> _alertContextFacadeMock = new();
+    private readonly Mock<IIoTContextFacade> _ioTContextFacadeMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
 
     [Fact]
@@ -69,6 +71,9 @@ public class AIAssistantCommandServiceIntegrationTests
 
         _sessionRepositoryMock.Verify(repository => repository.UpdateGeneralChatSession(session), Times.Once);
         _sessionRepositoryMock.Verify(repository => repository.AddGeneralChatSessionAsync(It.IsAny<GeneralChatSession>()), Times.Never);
+        _alertContextFacadeMock.Verify(
+            facade => facade.GetBovineAlertContextAsync(It.IsAny<int>(), It.IsAny<int>()),
+            Times.Never);
         _unitOfWorkMock.Verify(unitOfWork => unitOfWork.CompleteAsync(), Times.Once);
     }
 
@@ -96,6 +101,11 @@ public class AIAssistantCommandServiceIntegrationTests
         _ranchContextFacadeMock
             .Setup(facade => facade.GetBovineContextAsync(userId, bovineId))
             .ReturnsAsync("Bovine id: 22\nName: Lola\nBreed: Angus");
+        _alertContextFacadeMock
+            .Setup(facade => facade.GetBovineAlertContextAsync(userId, bovineId))
+            .ReturnsAsync(
+                "Alertas recientes del bovino seleccionado (maximo 5):\n" +
+                "- 2026-05-30 12:00:00Z: tipo Fever, urgencia Red, estado Unread, mensaje: High temperature detected");
         _analysisRepositoryMock
             .Setup(repository => repository.FindByBovineIdAsync(bovineId))
             .ReturnsAsync(new[] { previousAnalysis });
@@ -125,6 +135,8 @@ public class AIAssistantCommandServiceIntegrationTests
         // Assert
         Assert.Equal("Bovine-specific response.", response);
         Assert.Contains("Name: Lola", capturedPrompt);
+        Assert.Contains("Alert context", capturedPrompt);
+        Assert.Contains("High temperature detected", capturedPrompt);
         Assert.Contains("Previous visual analysis context", capturedPrompt);
         Assert.Contains("urgency Yellow", capturedPrompt);
         Assert.Contains("Visible limp on rear leg", capturedPrompt);
@@ -135,6 +147,7 @@ public class AIAssistantCommandServiceIntegrationTests
 
         _sessionRepositoryMock.Verify(repository => repository.UpdateBovineChatSession(session), Times.Once);
         _sessionRepositoryMock.Verify(repository => repository.AddBovineChatSessionAsync(It.IsAny<BovineChatSession>()), Times.Never);
+        _alertContextFacadeMock.Verify(facade => facade.GetBovineAlertContextAsync(userId, bovineId), Times.Once);
         _analysisRepositoryMock.Verify(repository => repository.FindByBovineIdAsync(bovineId), Times.Once);
         _unitOfWorkMock.Verify(unitOfWork => unitOfWork.CompleteAsync(), Times.Once);
     }
@@ -186,6 +199,8 @@ public class AIAssistantCommandServiceIntegrationTests
             _chatServiceMock.Object,
             _visionServiceMock.Object,
             _ranchContextFacadeMock.Object,
+            _alertContextFacadeMock.Object,
+            _ioTContextFacadeMock.Object,
             _unitOfWorkMock.Object);
     }
 }

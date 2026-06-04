@@ -10,6 +10,9 @@ public class AlertQueryService(IAlertRepository alertRepository) : IAlertQuerySe
     public async Task<IEnumerable<Alert>> Handle(GetAlertsByUserIdQuery query)
         => await alertRepository.FindByUserIdAsync(query.UserId);
 
+    public async Task<IEnumerable<Alert>> Handle(GetAlertsByUserIdAndBovineIdQuery query)
+        => await alertRepository.FindByUserIdAndBovineIdAsync(query.UserId, query.BovineId, query.Limit);
+
     public async Task<Alert?> Handle(GetAlertByIdQuery query)
         => await alertRepository.FindByIdAsync(query.AlertId);
 }

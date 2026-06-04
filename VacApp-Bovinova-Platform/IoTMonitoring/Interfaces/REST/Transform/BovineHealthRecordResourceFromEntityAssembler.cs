@@ -7,6 +7,6 @@ public static class BovineHealthRecordResourceFromEntityAssembler
 {
     public static BovineHealthRecordResource ToResourceFromEntity(BovineHealthRecord entity)
         => new(entity.Id, entity.BovineId, entity.DeviceId,
-               entity.Temperature, entity.HeartRate,
+               entity.Temperature, entity.HeartRate, entity.BatteryLevel,
                entity.IsAlert, entity.RecordedAt);
 }

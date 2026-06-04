@@ -43,6 +43,7 @@ public class AIAssistantRealAIUseCaseIntegrationTests(ITestOutputHelper output)
         ranchContextFacadeMock
             .Setup(facade => facade.GetGeneralRanchContextAsync(userId))
             .ReturnsAsync(farmContext);
+        var alertContextFacadeMock = new Mock<IAlertContextFacade>();
 
         using var chatService = CreateRealCapturingChatService();
         var service = new AIAssistantCommandService(
@@ -51,6 +52,8 @@ public class AIAssistantRealAIUseCaseIntegrationTests(ITestOutputHelper output)
             chatService,
             Mock.Of<IAIVisionService>(),
             ranchContextFacadeMock.Object,
+            alertContextFacadeMock.Object,
+            Mock.Of<IIoTContextFacade>(),
             unitOfWork);
 
         // Act
@@ -82,6 +85,9 @@ public class AIAssistantRealAIUseCaseIntegrationTests(ITestOutputHelper output)
             persistedAfterSecondMessage.GetMessages(),
             message => message.Role == "user" && message.Content.Contains("active campaign name"));
         ranchContextFacadeMock.Verify(facade => facade.GetGeneralRanchContextAsync(userId), Times.Exactly(2));
+        alertContextFacadeMock.Verify(
+            facade => facade.GetBovineAlertContextAsync(It.IsAny<int>(), It.IsAny<int>()),
+            Times.Never);
     }
 
     [ExternalAIFact]
@@ -119,6 +125,13 @@ public class AIAssistantRealAIUseCaseIntegrationTests(ITestOutputHelper output)
         ranchContextFacadeMock
             .Setup(facade => facade.GetBovineContextAsync(userId, bovineId))
             .ReturnsAsync(bovineContext);
+        var alertContextFacadeMock = new Mock<IAlertContextFacade>();
+        alertContextFacadeMock
+            .Setup(facade => facade.GetBovineAlertContextAsync(userId, bovineId))
+            .ReturnsAsync("""
+                          Alertas recientes del bovino seleccionado (maximo 5):
+                          - 2026-05-30 12:00:00Z: tipo Fever, urgencia Red, estado Unread, mensaje: High temperature detected
+                          """);
 
         using var chatService = CreateRealCapturingChatService();
         var service = new AIAssistantCommandService(
@@ -127,6 +140,8 @@ public class AIAssistantRealAIUseCaseIntegrationTests(ITestOutputHelper output)
             chatService,
             Mock.Of<IAIVisionService>(),
             ranchContextFacadeMock.Object,
+            alertContextFacadeMock.Object,
+            Mock.Of<IIoTContextFacade>(),
             unitOfWork);
 
         // Act
@@ -142,6 +157,7 @@ public class AIAssistantRealAIUseCaseIntegrationTests(ITestOutputHelper output)
         Assert.False(string.IsNullOrWhiteSpace(response));
         Assert.NotNull(persistedSession);
         Assert.Contains("Name: Lola", chatService.Calls[0].SystemPrompt);
+        Assert.Contains("High temperature detected", chatService.Calls[0].SystemPrompt);
         Assert.Contains("Visible limp on rear leg", chatService.Calls[0].SystemPrompt);
         Assert.Contains("urgency Yellow", chatService.Calls[0].SystemPrompt);
         Assert.Empty(chatService.Calls[0].ConversationHistory);
@@ -150,6 +166,7 @@ public class AIAssistantRealAIUseCaseIntegrationTests(ITestOutputHelper output)
             persistedSession.GetMessages(),
             message => message.Role == "assistant" && !string.IsNullOrWhiteSpace(message.Content));
         ranchContextFacadeMock.Verify(facade => facade.GetBovineContextAsync(userId, bovineId), Times.Once);
+        alertContextFacadeMock.Verify(facade => facade.GetBovineAlertContextAsync(userId, bovineId), Times.Once);
     }
 
     private static AppDbContext CreateInMemoryContext()

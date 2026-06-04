@@ -9,8 +9,8 @@ public class BovineHealthRecordQueryService(IBovineHealthRecordRepository reposi
     : IBovineHealthRecordQueryService
 {
     public async Task<IEnumerable<BovineHealthRecord>> Handle(GetHealthRecordsByBovineIdQuery query)
-        => await repository.FindByBovineIdAsync(query.BovineId);
+        => await repository.FindByBovineIdAsync(query.BovineId, query.UserId);
 
     public async Task<BovineHealthRecord?> Handle(GetLatestHealthRecordByBovineIdQuery query)
-        => await repository.FindLatestByBovineIdAsync(query.BovineId);
+        => await repository.FindLatestByBovineIdAsync(query.BovineId, query.UserId);
 }

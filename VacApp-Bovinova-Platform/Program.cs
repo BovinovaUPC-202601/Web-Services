@@ -42,16 +42,17 @@ using VacApp_Bovinova_Platform.IoTMonitoring.Application.Internal.QueryServices;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Repositories;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Services;
 using VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Persistence.EFC.Repositories;
+using VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Messaging;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Media.Local;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Repositories;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Services;
 using VacApp_Bovinova_Platform.AIAssistant.Application.ACL;
 using VacApp_Bovinova_Platform.AIAssistant.Application.Internal.CommandServices;
+using VacApp_Bovinova_Platform.AIAssistant.Application.Internal.QueryServices;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.ACL;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Clients;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Configuration;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Services;
-using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.Persistence.EFC.Configuration;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.Persistence.EFC.Repositories;
 
 DotEnv.Load();
@@ -107,7 +108,8 @@ var connectionString = $"Server={Environment.GetEnvironmentVariable("DB_HOST")};
                        $"Database={Environment.GetEnvironmentVariable("DB_NAME")};" +
                        $"User={Environment.GetEnvironmentVariable("DB_USER")};" +
                        $"Password={Environment.GetEnvironmentVariable("DB_PASS")};" +
-                       $"SslMode={Environment.GetEnvironmentVariable("DB_SSL_MODE") ?? "none"};";
+                       $"SslMode={Environment.GetEnvironmentVariable("DB_SSL_MODE") ?? "none"};" +
+                       $"AllowPublicKeyRetrieval={Environment.GetEnvironmentVariable("DB_ALLOW_PUBLIC_KEY_RETRIEVAL") ?? "false"};";
 
 // Verify Database Connection string
 if (string.IsNullOrEmpty(connectionString))
@@ -193,6 +195,21 @@ builder.Services.AddScoped<IBovineHealthRecordRepository, BovineHealthRecordRepo
 builder.Services.AddScoped<IBovineHealthRecordCommandService, BovineHealthRecordCommandService>();
 builder.Services.AddScoped<IBovineHealthRecordQueryService, BovineHealthRecordQueryService>();
 
+// MQTT telemetry ingestion (CON2: collar communicates exclusively over MQTT)
+builder.Services.AddSingleton(new MqttSettings
+{
+    Host                = Environment.GetEnvironmentVariable("MQTT_HOST") ?? "localhost",
+    Port                = int.TryParse(Environment.GetEnvironmentVariable("MQTT_PORT"), out var mqttPort) ? mqttPort : 1883,
+    Username            = Environment.GetEnvironmentVariable("MQTT_USERNAME") ?? string.Empty,
+    Password            = Environment.GetEnvironmentVariable("MQTT_PASSWORD") ?? string.Empty,
+    ClientId            = Environment.GetEnvironmentVariable("MQTT_CLIENT_ID") ?? "vacapp-backend",
+    TelemetryTopic      = Environment.GetEnvironmentVariable("MQTT_TELEMETRY_TOPIC") ?? "vacapp/telemetry",
+    ResponseTopicPrefix = Environment.GetEnvironmentVariable("MQTT_RESPONSE_TOPIC_PREFIX") ?? "vacapp/telemetry/response",
+    UseTls                     = bool.TryParse(Environment.GetEnvironmentVariable("MQTT_USE_TLS"), out var mqttTls) && mqttTls,
+    AllowUntrustedCertificates = bool.TryParse(Environment.GetEnvironmentVariable("MQTT_TLS_ALLOW_UNTRUSTED"), out var mqttUntrusted) && mqttUntrusted
+});
+builder.Services.AddHostedService<MqttTelemetryConsumer>();
+
 //Alert Management BC
 builder.Services.AddScoped<IAlertRepository, AlertRepository>();
 builder.Services.AddScoped<IAlertCommandService, AlertCommandService>();
@@ -218,7 +235,10 @@ builder.Services.AddScoped<IAIVisionService, LmStudioVisionService>();
 builder.Services.AddScoped<IAISessionRepository, AISessionRepository>();
 builder.Services.AddScoped<IBovineAnalysisRepository, BovineAnalysisRepository>();
 builder.Services.AddScoped<IRanchContextFacade, RanchContextFacade>();
+builder.Services.AddScoped<IAlertContextFacade, AlertContextFacade>();
+builder.Services.AddScoped<IIoTContextFacade, IoTContextFacade>();
 builder.Services.AddScoped<IAIAssistantCommandService, AIAssistantCommandService>();
+builder.Services.AddScoped<IAIAssistantQueryService, AIAssistantQueryService>();
 
 
 /////////////////////////End Database Configuration/////////////////////////
@@ -229,8 +249,7 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<AppDbContext>();
-    context.Database.EnsureCreated();
-    context.EnsureAIAssistantTablesCreated();
+    context.Database.Migrate();  
 }
 
 // Configure the HTTP request pipeline.

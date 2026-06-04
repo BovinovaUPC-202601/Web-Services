@@ -5,5 +5,6 @@ public record CreateBovineHealthRecordCommand(
     int    UserId,
     string DeviceId,
     float  Temperature,
-    float  HeartRate
+    float  HeartRate,
+    int    BatteryLevel
 );

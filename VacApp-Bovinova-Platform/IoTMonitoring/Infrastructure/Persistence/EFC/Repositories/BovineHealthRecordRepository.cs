@@ -9,15 +9,15 @@ namespace VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Persistence.EFC.
 public class BovineHealthRecordRepository(AppDbContext context)
     : BaseRepository<BovineHealthRecord>(context), IBovineHealthRecordRepository
 {
-    public async Task<IEnumerable<BovineHealthRecord>> FindByBovineIdAsync(int bovineId)
+    public async Task<IEnumerable<BovineHealthRecord>> FindByBovineIdAsync(int bovineId, int userId)
         => await Context.Set<BovineHealthRecord>()
-            .Where(r => r.BovineId == bovineId)
+            .Where(r => r.BovineId == bovineId && r.UserId == userId)
             .OrderByDescending(r => r.RecordedAt)
             .ToListAsync();
 
-    public async Task<BovineHealthRecord?> FindLatestByBovineIdAsync(int bovineId)
+    public async Task<BovineHealthRecord?> FindLatestByBovineIdAsync(int bovineId, int userId)
         => await Context.Set<BovineHealthRecord>()
-            .Where(r => r.BovineId == bovineId)
+            .Where(r => r.BovineId == bovineId && r.UserId == userId)
             .OrderByDescending(r => r.RecordedAt)
             .FirstOrDefaultAsync();
 }
