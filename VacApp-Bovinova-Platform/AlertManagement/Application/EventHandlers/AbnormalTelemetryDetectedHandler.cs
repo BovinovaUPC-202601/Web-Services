@@ -9,7 +9,8 @@ namespace VacApp_Bovinova_Platform.AlertManagement.Application.EventHandlers;
 
 /// <summary>
 /// Reacts to AbnormalTelemetryDetectedEvent published by IoTMonitoring.
-/// Creates a FEVER alert for the rancher.
+/// Creates a biometric-anomaly alert for the rancher; the specific condition
+/// (fever, hypothermia, tachycardia, …) is described in the alert message.
 /// AlertManagement does NOT depend on IoTMonitoring — only on the shared event contract.
 /// </summary>
 public class AbnormalTelemetryDetectedHandler(IAlertCommandService alertCommandService)
@@ -23,7 +24,7 @@ public class AbnormalTelemetryDetectedHandler(IAlertCommandService alertCommandS
         var command = new RegisterAlertCommand(
             BovineId:     notification.BovineId,
             UserId:       notification.UserId,
-            AlertType:    AlertType.Fever,
+            AlertType:    AlertType.BiometricAnomaly,
             UrgencyLevel: urgency,
             Message:      message
         );
