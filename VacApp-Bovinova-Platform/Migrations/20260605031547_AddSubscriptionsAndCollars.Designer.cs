@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configuration;
 
@@ -10,9 +11,11 @@ using VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configurati
 namespace VacApp_Bovinova_Platform.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260605031547_AddSubscriptionsAndCollars")]
+    partial class AddSubscriptionsAndCollars
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -378,22 +381,6 @@ namespace VacApp_Bovinova_Platform.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
                         .HasColumnName("gender");
-
-                    b.Property<int>("MaxHeartRate")
-                        .HasColumnType("int")
-                        .HasColumnName("max-heart-rate");
-
-                    b.Property<double>("MaxTemperature")
-                        .HasColumnType("double")
-                        .HasColumnName("max-temperature");
-
-                    b.Property<int>("MinHeartRate")
-                        .HasColumnType("int")
-                        .HasColumnName("min-heart-rate");
-
-                    b.Property<double>("MinTemperature")
-                        .HasColumnType("double")
-                        .HasColumnName("min-temperature");
 
                     b.Property<string>("Name")
                         .IsRequired()

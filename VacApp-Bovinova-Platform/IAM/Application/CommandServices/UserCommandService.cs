@@ -70,5 +70,16 @@ namespace VacApp_Bovinova_Platform.IAM.Application.CommandServices
                 return null;
             }
         }
+
+        public async Task<User?> Handle(ChangeSubscriptionCommand command)
+        {
+            var user = await userRepository.FindByIdAsync(command.Id);
+            if (user == null)
+                return null;
+
+            user.ChangeSubscription(command.SubscriptionPlan);
+            await unitOfWork.CompleteAsync();
+            return user;
+        }
     }
 }
