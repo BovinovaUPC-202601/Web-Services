@@ -54,4 +54,18 @@ public class BovineHealthRecordController(
         if (record is null) return NotFound();
         return Ok(BovineHealthRecordResourceFromEntityAssembler.ToResourceFromEntity(record));
     }
+
+
+        private IActionResult? ValidatePlusSubscription()
+    {
+        var user = HttpContext.Items["User"] as User;
+
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        if (user.SubscriptionPlan != "Plus")
+            return Forbid();
+
+        return null;
+    }
 }
