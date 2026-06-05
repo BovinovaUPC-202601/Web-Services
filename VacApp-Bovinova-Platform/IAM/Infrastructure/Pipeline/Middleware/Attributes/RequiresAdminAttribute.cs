@@ -22,8 +22,10 @@ namespace VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Attrib
                 return;
             }
 
+            // 403 directly (not ForbidResult): the app uses custom JWT middleware,
+            // not ASP.NET authentication schemes, so Forbid() would throw → 500.
             if (user.Role != UserRole.Admin)
-                context.Result = new ForbidResult();
+                context.Result = new StatusCodeResult(403);
         }
     }
 }
