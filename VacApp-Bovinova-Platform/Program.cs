@@ -43,6 +43,15 @@ using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Repositories;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Services;
 using VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Persistence.EFC.Repositories;
 using VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Messaging;
+using VacApp_Bovinova_Platform.IoTMonitoring.Application.ACL;
+using VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.ACL;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Application.Internal.CommandServices;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Application.Internal.QueryServices;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Repositories;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Services;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Infrastructure.Persistence.EFC.Repositories;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Application.ACL;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Infrastructure.ACL;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Media.Local;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Repositories;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Services;
@@ -194,6 +203,17 @@ builder.Services.AddScoped<ICampaignQueryService, CampaignQueryService>();
 builder.Services.AddScoped<IBovineHealthRecordRepository, BovineHealthRecordRepository>();
 builder.Services.AddScoped<IBovineHealthRecordCommandService, BovineHealthRecordCommandService>();
 builder.Services.AddScoped<IBovineHealthRecordQueryService, BovineHealthRecordQueryService>();
+builder.Services.AddScoped<ICollarRepository, CollarRepository>();
+builder.Services.AddScoped<ICollarCommandService, CollarCommandService>();
+builder.Services.AddScoped<ICollarQueryService, CollarQueryService>();
+builder.Services.AddScoped<ISubscriptionContextFacade, SubscriptionContextFacade>();
+
+// Subscription Management BC
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+builder.Services.AddScoped<IAdditionalCollarRequestRepository, AdditionalCollarRequestRepository>();
+builder.Services.AddScoped<ISubscriptionCommandService, SubscriptionCommandService>();
+builder.Services.AddScoped<ISubscriptionQueryService, SubscriptionQueryService>();
+builder.Services.AddScoped<ICollarLifecycleFacade, CollarLifecycleFacade>();
 
 // MQTT telemetry ingestion (CON2: collar communicates exclusively over MQTT)
 builder.Services.AddSingleton(new MqttSettings

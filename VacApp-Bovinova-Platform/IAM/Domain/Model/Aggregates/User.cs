@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using EntityFrameworkCore.CreatedUpdatedDate.Contracts;
+using VacApp_Bovinova_Platform.IAM.Domain.Model;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Commands;
 namespace VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates
 {
@@ -23,7 +24,10 @@ namespace VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates
         public string Email { get; private set; }
 
         [Required]
-        public string SubscriptionPlan { get; private set; } = "Free";
+        public string SubscriptionPlan { get; private set; } = SubscriptionPlans.Free;
+
+        [Required]
+        public UserRole Role { get; private set; } = UserRole.Rancher;
 
         private User() { }
 
@@ -49,6 +53,9 @@ namespace VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates
 
         public void ChangeSubscription(string plan)
         {
+            if (!SubscriptionPlans.IsValid(plan))
+                throw new ArgumentException($"Invalid subscription plan: '{plan}'.", nameof(plan));
+
             SubscriptionPlan = plan;
         }
     }

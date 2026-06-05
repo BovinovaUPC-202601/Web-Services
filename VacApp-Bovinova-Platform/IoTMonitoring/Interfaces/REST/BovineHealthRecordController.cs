@@ -9,6 +9,8 @@ using VacApp_Bovinova_Platform.IoTMonitoring.Interfaces.REST.Transform;
 
 namespace VacApp_Bovinova_Platform.IoTMonitoring.Interfaces.REST;
 
+[Authorize]
+[RequiresPlus]
 [ApiController]
 [Route("api/v1/iot-monitoring")]
 [Produces(MediaTypeNames.Application.Json)]
@@ -23,7 +25,6 @@ public class BovineHealthRecordController(
     /// <summary>
     /// Returns the full telemetry history for a bovine. Requires JWT.
     /// </summary>
-    [Authorize]
     [HttpGet("bovines/{bovineId}/records")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<BovineHealthRecordResource>>> GetRecordsByBovineId(
@@ -40,7 +41,6 @@ public class BovineHealthRecordController(
     /// <summary>
     /// Returns the most recent reading for a bovine. Requires JWT.
     /// </summary>
-    [Authorize]
     [HttpGet("bovines/{bovineId}/latest")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

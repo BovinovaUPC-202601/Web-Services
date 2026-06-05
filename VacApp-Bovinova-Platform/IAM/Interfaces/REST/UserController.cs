@@ -13,7 +13,6 @@ using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Services;
 using VacApp_Bovinova_Platform.StaffAdministration.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
-using VacApp_Bovinova_Platform.IAM.Domain.Repositories;
 using VacApp_Bovinova_Platform.IAM.Interfaces.REST.Resources;
 
 
@@ -27,7 +26,6 @@ namespace VacApp_Bovinova_Platform.IAM.Interfaces.REST
     public class UserController(
         IUserCommandService commandService,
         IUserQueryService queryService,
-        IUserRepository userRepository,
         IBovineQueryService bovineQueryService,
         ICampaignQueryService campaignQueryService,
     IProductQueryService productQueryService,
@@ -141,15 +139,23 @@ namespace VacApp_Bovinova_Platform.IAM.Interfaces.REST
             if (user is null)
                 return Unauthorized("User not found in context.");
 
-            user.ChangeSubscription(resource.SubscriptionPlan);
-
-            await userRepository.UpdateAsync(user);
-
-            return Ok(new
+            try
             {
-                message = "Subscription updated",
-                subscription = user.SubscriptionPlan
-            });
+                var command = ChangeSubscriptionCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id);
+                var updatedUser = await commandService.Handle(command);
+
+                if (updatedUser is null) return NotFound("User not found.");
+
+                return Ok(new
+                {
+                    message = "Subscription updated",
+                    subscription = updatedUser.SubscriptionPlan
+                });
+            }
+            catch (ArgumentException e)
+            {
+                return BadRequest(e.Message);
+            }
         }
     }
 }
