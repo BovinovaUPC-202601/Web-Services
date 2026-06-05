@@ -29,6 +29,13 @@ public class LmStudioVisionService(ILocalModelClient localModelClient) : IAIVisi
                        "recommendation": "string en español",
                        "confidence": number
                      }
+
+                     Reglas de los campos numéricos:
+                     - "score": es el Body Condition Score (BCS) del bovino, un número decimal entre 1.0 y 5.0
+                       (1.0 = muy delgado/emaciado, 3.0 = condición ideal, 5.0 = obeso). Usa un decimal.
+                       NUNCA uses una escala 0 a 1; si el animal se ve sano, el score ronda 3.0.
+                     - "confidence": tu nivel de certeza como número decimal entre 0.0 y 1.0.
+
                      No entregues un diagnóstico veterinario definitivo. Da solo observaciones preventivas y recomienda contactar a un veterinario cuando el riesgo sea serio.
 
                      Contexto:
@@ -76,14 +83,20 @@ public class LmStudioVisionService(ILocalModelClient localModelClient) : IAIVisi
         if (!Enum.TryParse<UrgencyLevel>(urgencyText, true, out var urgencyLevel))
             throw new InvalidOperationException($"Unknown urgency level returned by local model: {urgencyText}");
 
+        // The Body Condition Score lives on a 1.0–5.0 scale (see prompt). Clamp as a safety
+        // net so an out-of-range value from the model never reaches the UI as e.g. 0.9/5.
+        var score = Math.Clamp(root.GetProperty("score").GetDecimal(), 1m, 5m);
+
+        var confidence = Math.Clamp(root.GetProperty("confidence").GetDecimal(), 0m, 1m);
+
         return new BovineAnalysis(
             userId,
             bovineId,
-            root.GetProperty("score").GetDecimal(),
+            score,
             root.GetProperty("visibleIssues").GetString() ?? string.Empty,
             urgencyLevel,
             root.GetProperty("recommendation").GetString() ?? string.Empty,
-            root.GetProperty("confidence").GetDecimal());
+            confidence);
     }
 
     private static string ExtractJsonObject(string response)
