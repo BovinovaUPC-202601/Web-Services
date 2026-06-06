@@ -11,7 +11,7 @@ using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Attributes
 namespace VacApp_Bovinova_Platform.AIAssistant.Interfaces.REST;
 
 [Authorize]
-//[RequiresPlus]
+[RequiresPlus]
 [ApiController]
 [Route("/api/v1/ai")]
 [Produces(MediaTypeNames.Application.Json)]
