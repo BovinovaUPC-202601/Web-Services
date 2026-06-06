@@ -39,6 +39,21 @@ public class SubscriptionCommandService(
         return subscription;
     }
 
+    public async Task SyncIamPlanAsync(int userId)
+    {
+        var subscription = await subscriptionRepository.FindByUserIdAsync(userId);
+        var effectivePlan = subscription is { IsPlusActive: true }
+            ? SubscriptionPlans.Plus
+            : SubscriptionPlans.Free;
+
+        var user = await userRepository.FindByIdAsync(userId);
+        if (user is null || user.SubscriptionPlan == effectivePlan) return;
+
+        // Drift detected: the denormalized IAM flag disagrees with the aggregate. Heal it.
+        user.ChangeSubscription(effectivePlan);
+        await unitOfWork.CompleteAsync();
+    }
+
     public async Task<AdditionalCollarRequest> Handle(RequestAdditionalCollarCommand command)
     {
         var subscription = await subscriptionRepository.FindByUserIdAsync(command.UserId);

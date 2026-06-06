@@ -50,6 +50,37 @@ public class CollarCommandService(
         return collar;
     }
 
+    public async Task Handle(DeleteCollarCommand command)
+    {
+        var collar = await collarRepository.FindByIdAsync(command.CollarId);
+        if (collar is null || collar.UserId != command.UserId)
+            throw new InvalidOperationException($"Collar {command.CollarId} not found or not owned by the user.");
+
+        collarRepository.Remove(collar);
+        await unitOfWork.CompleteAsync();
+    }
+
+    public async Task<Collar> Handle(ReassignCollarCommand command)
+    {
+        var collar = await collarRepository.FindByIdAsync(command.CollarId);
+        if (collar is null || collar.UserId != command.UserId)
+            throw new InvalidOperationException($"Collar {command.CollarId} not found or not owned by the user.");
+
+        // Ownership: the target bovine must belong to the requesting user.
+        var bovine = await bovineQueryService.Handle(new GetBovinesByIdQuery(command.NewBovineId));
+        if (bovine is null || bovine.UserId != command.UserId)
+            throw new InvalidOperationException($"Bovine {command.NewBovineId} not found or not owned by the user.");
+
+        if (collar.BovineId != command.NewBovineId
+            && await collarRepository.ExistsActiveByBovineIdAsync(command.NewBovineId))
+            throw new InvalidOperationException($"Bovine {command.NewBovineId} already has a collar assigned.");
+
+        collar.Reassign(command.NewBovineId);
+        collarRepository.Update(collar);
+        await unitOfWork.CompleteAsync();
+        return collar;
+    }
+
     public async Task SuspendUserCollarsAsync(int userId)
     {
         var collars = await collarRepository.FindByUserIdAsync(userId);

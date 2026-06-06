@@ -11,4 +11,11 @@ public interface ISubscriptionCommandService
     Task<Subscription?> Handle(CancelSubscriptionCommand command);
     Task<AdditionalCollarRequest?> Handle(ApproveAdditionalCollarCommand command);
     Task<AdditionalCollarRequest?> Handle(DeliverAdditionalCollarCommand command);
+
+    /// <summary>
+    /// Reconciles the denormalized IAM SubscriptionPlan flag with the authoritative
+    /// subscription aggregate. Heals any drift (e.g. an activation that failed to
+    /// sync the flag) so [RequiresPlus] reflects the real plan. Idempotent.
+    /// </summary>
+    Task SyncIamPlanAsync(int userId);
 }

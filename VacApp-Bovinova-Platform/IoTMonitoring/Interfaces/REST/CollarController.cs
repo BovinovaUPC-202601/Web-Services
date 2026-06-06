@@ -101,4 +101,47 @@ public class CollarController(
         var allowance = await subscriptionContext.GetCollarAllowanceAsync(user.Id);
         return Ok(new CollarCapacityResource(active, allowance, Math.Max(0, allowance - active)));
     }
+
+    /// <summary>Reassigns one of the user's collars to a different bovine.</summary>
+    [HttpPut("{collarId:int}")]
+    [SwaggerResponse(StatusCodes.Status200OK, "Collar reassigned", typeof(CollarResource))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "Bovine not owned or already has a collar")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "Collar not found")]
+    public async Task<IActionResult> ReassignCollar(
+        [FromRoute] int collarId, [FromBody] ReassignCollarResource resource)
+    {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null) return Unauthorized("User not found in context.");
+
+        try
+        {
+            var command = new ReassignCollarCommand(collarId, user.Id, resource.BovineId);
+            var collar = await commandService.Handle(command);
+            return Ok(CollarResourceFromEntityAssembler.ToResourceFromEntity(collar));
+        }
+        catch (InvalidOperationException e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    /// <summary>Deletes (unassigns) one of the user's collars, freeing capacity.</summary>
+    [HttpDelete("{collarId:int}")]
+    [SwaggerResponse(StatusCodes.Status204NoContent, "Collar deleted")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "Collar not found")]
+    public async Task<IActionResult> DeleteCollar([FromRoute] int collarId)
+    {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null) return Unauthorized("User not found in context.");
+
+        try
+        {
+            await commandService.Handle(new DeleteCollarCommand(collarId, user.Id));
+            return NoContent();
+        }
+        catch (InvalidOperationException e)
+        {
+            return NotFound(e.Message);
+        }
+    }
 }

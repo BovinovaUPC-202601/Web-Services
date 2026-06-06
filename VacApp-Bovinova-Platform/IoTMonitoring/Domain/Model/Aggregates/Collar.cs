@@ -40,6 +40,9 @@ public class Collar
     public void Suspend()         => LifecycleStatus = CollarLifecycleStatus.Suspended;
     public void Reactivate()      => LifecycleStatus = CollarLifecycleStatus.Active;
 
+    /// <summary>Reassigns the physical collar to a different bovine.</summary>
+    public void Reassign(int bovineId) => BovineId = bovineId;
+
     /// <summary>
     /// Resolves the runtime operational status. Lifecycle overrides take precedence;
     /// otherwise ACTIVE if a reading arrived within the signal window, else NO_SIGNAL.

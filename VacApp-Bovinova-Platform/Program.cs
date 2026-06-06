@@ -66,6 +66,12 @@ using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.Persistence.EFC.Reposi
 
 DotEnv.Load();
 
+// Force invariant culture so decimal model binding (e.g. "39.3") is parsed with a
+// dot separator regardless of the host OS locale (es_ES treats "." as thousands,
+// turning 39.3 into 393 and breaking [Range] validation on temperatures).
+System.Globalization.CultureInfo.DefaultThreadCurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = System.Globalization.CultureInfo.InvariantCulture;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
