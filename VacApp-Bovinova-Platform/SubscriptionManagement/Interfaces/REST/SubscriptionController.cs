@@ -49,6 +49,10 @@ public class SubscriptionController(
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
 
+        // Self-heal any drift between the IAM flag and the subscription aggregate
+        // (the frontend hits this on every layout mount), so [RequiresPlus] stays correct.
+        await commandService.SyncIamPlanAsync(user.Id);
+
         var subscription = await queryService.Handle(new GetSubscriptionByUserIdQuery(user.Id));
         if (subscription is null)
             return Ok(new SubscriptionResource("Free", "Active", null, null, 0, 0, 0m));

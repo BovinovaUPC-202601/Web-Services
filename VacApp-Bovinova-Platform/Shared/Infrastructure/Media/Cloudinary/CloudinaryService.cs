@@ -41,7 +41,9 @@ namespace VacApp_Bovinova_Platform.Shared.Infrastructure.Media.Cloudinary
             };
             var uploadResult = cloudinary.Upload(uploadParams);
 
-            return uploadResult.SecureUrl.ToString();
+            // If Cloudinary is misconfigured / the upload fails, SecureUrl is null.
+            // Don't 500 the whole request — let the entity be created without an image.
+            return uploadResult?.SecureUrl?.ToString() ?? string.Empty;
         }
     }
 }
