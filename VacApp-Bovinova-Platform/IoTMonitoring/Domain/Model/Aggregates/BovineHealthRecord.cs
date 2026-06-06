@@ -33,15 +33,20 @@ public class BovineHealthRecord
         HeartRate    = command.HeartRate;
         BatteryLevel = command.BatteryLevel;
         RecordedAt   = DateTime.UtcNow;
-        IsAlert      = EvaluateAlert(command.Temperature, command.HeartRate);
+        // IsAlert stays false until evaluated against the bovine's own thresholds
+        // (the reading alone doesn't know the configured range).
+        IsAlert      = false;
     }
 
     /// <summary>
-    /// Returns true when any vital sign is outside the normal bovine range.
+    /// Flags the record as an alert when a vital sign falls outside the bovine's
+    /// configured thresholds. Limits are inclusive. Returns the resulting state.
     /// </summary>
-    public static bool EvaluateAlert(float temperature, float heartRate)
+    public bool EvaluateAlert(float minTemperature, float maxTemperature,
+                              float minHeartRate, float maxHeartRate)
     {
-        return BovineVitalRanges.IsTemperatureOutOfRange(temperature)
-            || BovineVitalRanges.IsHeartRateOutOfRange(heartRate);
+        IsAlert = BovineVitalRanges.IsTemperatureOutOfRange(Temperature, minTemperature, maxTemperature)
+               || BovineVitalRanges.IsHeartRateOutOfRange(HeartRate, minHeartRate, maxHeartRate);
+        return IsAlert;
     }
 }

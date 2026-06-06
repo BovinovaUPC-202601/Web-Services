@@ -11,5 +11,9 @@ public record AbnormalTelemetryDetectedEvent(
     int    UserId,
     float  Temperature,
     float  HeartRate,
-    string DeviceId
+    string DeviceId,
+    float  MinTemperature,
+    float  MaxTemperature,
+    float  MinHeartRate,
+    float  MaxHeartRate
 ) : INotification;
