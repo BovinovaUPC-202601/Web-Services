@@ -37,6 +37,7 @@ using VacApp_Bovinova_Platform.AlertManagement.Domain.Repositories;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Services;
 using VacApp_Bovinova_Platform.AlertManagement.Infrastructure.Persistence.EFC.Repositories;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Extensions;
+using VacApp_Bovinova_Platform.Shared.Infrastructure.Pipeline.Middleware.Extensions;
 using VacApp_Bovinova_Platform.IoTMonitoring.Application.Internal.CommandServices;
 using VacApp_Bovinova_Platform.IoTMonitoring.Application.Internal.QueryServices;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Repositories;
@@ -286,6 +287,9 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 }
 
 app.UseCors("AllowAllPolicy");
+// Must sit after CORS so error responses keep their CORS headers, and before the
+// auth middleware so its 401s are mapped instead of bubbling up as 500s.
+app.UseRequestExceptionHandling();
 app.UseRequestAuthorization();
 app.UseHttpsRedirection();
 //app.UseAuthentication();
