@@ -9,7 +9,8 @@ namespace VacApp_Bovinova_Platform.AlertManagement.Application.EventHandlers;
 
 /// <summary>
 /// Reacts to AbnormalTelemetryDetectedEvent published by IoTMonitoring.
-/// Creates a FEVER alert for the rancher.
+/// Creates a biometric-anomaly alert for the rancher; the specific condition
+/// (fever, hypothermia, tachycardia, …) is described in the alert message.
 /// AlertManagement does NOT depend on IoTMonitoring — only on the shared event contract.
 /// </summary>
 public class AbnormalTelemetryDetectedHandler(IAlertCommandService alertCommandService)
@@ -17,13 +18,13 @@ public class AbnormalTelemetryDetectedHandler(IAlertCommandService alertCommandS
 {
     public async Task Handle(AbnormalTelemetryDetectedEvent notification, CancellationToken cancellationToken)
     {
-        var message = BuildMessage(notification.Temperature, notification.HeartRate);
-        var urgency = DetermineUrgency(notification.Temperature, notification.HeartRate);
+        var message = BuildMessage(notification);
+        var urgency = DetermineUrgency(notification);
 
         var command = new RegisterAlertCommand(
             BovineId:     notification.BovineId,
             UserId:       notification.UserId,
-            AlertType:    AlertType.Fever,
+            AlertType:    AlertType.BiometricAnomaly,
             UrgencyLevel: urgency,
             Message:      message
         );
@@ -31,23 +32,24 @@ public class AbnormalTelemetryDetectedHandler(IAlertCommandService alertCommandS
         await alertCommandService.Handle(command);
     }
 
-    private static UrgencyLevel DetermineUrgency(float temperature, float heartRate)
+    private static UrgencyLevel DetermineUrgency(AbnormalTelemetryDetectedEvent n)
     {
-        // RED: both vitals out of range; YELLOW: a single vital out of range
-        bool tempOutOfRange = BovineVitalRanges.IsTemperatureOutOfRange(temperature);
-        bool hrOutOfRange   = BovineVitalRanges.IsHeartRateOutOfRange(heartRate);
+        // RED: both vitals out of range; YELLOW: a single vital out of range.
+        // Judged against the bovine's own thresholds carried by the event.
+        bool tempOutOfRange = BovineVitalRanges.IsTemperatureOutOfRange(n.Temperature, n.MinTemperature, n.MaxTemperature);
+        bool hrOutOfRange   = BovineVitalRanges.IsHeartRateOutOfRange(n.HeartRate, n.MinHeartRate, n.MaxHeartRate);
 
         if (tempOutOfRange && hrOutOfRange) return UrgencyLevel.Red;
         return UrgencyLevel.Yellow;
     }
 
-    private static string BuildMessage(float temperature, float heartRate)
+    private static string BuildMessage(AbnormalTelemetryDetectedEvent n)
     {
         var parts = new List<string>();
-        if (temperature < BovineVitalRanges.MinTemperature) parts.Add($"temperatura baja ({temperature:F1}°C)");
-        if (temperature > BovineVitalRanges.MaxTemperature) parts.Add($"fiebre ({temperature:F1}°C)");
-        if (heartRate < BovineVitalRanges.MinHeartRate)     parts.Add($"bradicardia ({heartRate:F0} BPM)");
-        if (heartRate > BovineVitalRanges.MaxHeartRate)     parts.Add($"taquicardia ({heartRate:F0} BPM)");
+        if (n.Temperature < n.MinTemperature) parts.Add($"temperatura baja ({n.Temperature:F1}°C)");
+        if (n.Temperature > n.MaxTemperature) parts.Add($"fiebre ({n.Temperature:F1}°C)");
+        if (n.HeartRate < n.MinHeartRate)     parts.Add($"bradicardia ({n.HeartRate:F0} BPM)");
+        if (n.HeartRate > n.MaxHeartRate)     parts.Add($"taquicardia ({n.HeartRate:F0} BPM)");
 
         return $"Anomalía biométrica detectada: {string.Join(", ", parts)}.";
     }

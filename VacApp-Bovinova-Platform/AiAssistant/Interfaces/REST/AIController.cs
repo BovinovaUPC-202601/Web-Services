@@ -11,6 +11,7 @@ using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Attributes
 namespace VacApp_Bovinova_Platform.AIAssistant.Interfaces.REST;
 
 [Authorize]
+[RequiresPlus]
 [ApiController]
 [Route("/api/v1/ai")]
 [Produces(MediaTypeNames.Application.Json)]
@@ -27,6 +28,7 @@ public class AIController(
     [SwaggerResponse(StatusCodes.Status200OK, "AI response generated", typeof(ChatResponseResource))]
     public async Task<IActionResult> SendGeneralChatMessage([FromBody] GeneralChatMessageResource resource)
     {
+
         var user = HttpContext.Items["User"] as User;
         if (user is null)
             return Unauthorized("User not found in context.");
@@ -44,6 +46,7 @@ public class AIController(
     [SwaggerResponse(StatusCodes.Status200OK, "General chat history", typeof(ChatHistoryResource))]
     public async Task<IActionResult> GetGeneralChatHistory()
     {
+        
         var user = HttpContext.Items["User"] as User;
         if (user is null)
             return Unauthorized("User not found in context.");
@@ -64,6 +67,7 @@ public class AIController(
     [SwaggerResponse(StatusCodes.Status200OK, "AI response generated", typeof(ChatResponseResource))]
     public async Task<IActionResult> SendBovineChatMessage([FromBody] BovineChatMessageResource resource)
     {
+        
         var user = HttpContext.Items["User"] as User;
         if (user is null)
             return Unauthorized("User not found in context.");
@@ -81,6 +85,7 @@ public class AIController(
     [SwaggerResponse(StatusCodes.Status200OK, "Bovine chat history", typeof(ChatHistoryResource))]
     public async Task<IActionResult> GetBovineChatHistory(int bovineId)
     {
+        
         var user = HttpContext.Items["User"] as User;
         if (user is null)
             return Unauthorized("User not found in context.");
@@ -101,6 +106,7 @@ public class AIController(
     [SwaggerResponse(StatusCodes.Status200OK, "List of bovine analyses", typeof(IEnumerable<BovineAnalysisResource>))]
     public async Task<IActionResult> GetBovineAnalyses(int bovineId)
     {
+        
         var user = HttpContext.Items["User"] as User;
         if (user is null)
             return Unauthorized("User not found in context.");
@@ -119,6 +125,7 @@ public class AIController(
     [SwaggerResponse(StatusCodes.Status400BadRequest, "Analysis could not be completed")]
     public async Task<IActionResult> AnalyzeBovinePhoto([FromBody] AnalyzePhotoResource resource)
     {
+        
         var user = HttpContext.Items["User"] as User;
         if (user is null)
             return Unauthorized("User not found in context.");

@@ -6,6 +6,7 @@ using VacApp_Bovinova_Platform.StaffAdministration.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.ValueObjects;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -21,6 +22,9 @@ public class AppDbContext : DbContext
     public DbSet<Category> Categories { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<BovineHealthRecord> BovineHealthRecords { get; set; }
+    public DbSet<Collar> Collars { get; set; }
+    public DbSet<Subscription> Subscriptions { get; set; }
+    public DbSet<AdditionalCollarRequest> AdditionalCollarRequests { get; set; }
     public DbSet<Alert> Alerts { get; set; }
     public DbSet<GeneralChatSession> GeneralChatSessions { get; set; }
     public DbSet<BovineChatSession> BovineChatSessions { get; set; }
@@ -51,6 +55,8 @@ public class AppDbContext : DbContext
         builder.Entity<User>().Property(f => f.Username).IsRequired();
         builder.Entity<User>().Property(f => f.Password).IsRequired();
         builder.Entity<User>().Property(f => f.Email).IsRequired();
+        builder.Entity<User>().Property(f => f.Role).IsRequired()
+            .HasConversion<string>().HasColumnName("role");
 
         /* Ranch Management */
         //Stable
@@ -135,6 +141,43 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(r => r.BovineId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Collar
+        builder.Entity<Collar>().HasKey(c => c.Id);
+        builder.Entity<Collar>().Property(c => c.Id).IsRequired().ValueGeneratedOnAdd();
+        builder.Entity<Collar>().Property(c => c.DeviceId).IsRequired().HasMaxLength(100).HasColumnName("device_id");
+        builder.Entity<Collar>().Property(c => c.BovineId).IsRequired().HasColumnName("bovine_id");
+        builder.Entity<Collar>().Property(c => c.UserId).IsRequired().HasColumnName("user_id");
+        builder.Entity<Collar>().Property(c => c.RegisteredAt).IsRequired().HasColumnName("registered_at");
+        builder.Entity<Collar>().Property(c => c.LifecycleStatus).IsRequired()
+            .HasConversion<string>().HasColumnName("lifecycle_status");
+        builder.Entity<Collar>().HasIndex(c => c.DeviceId).IsUnique();
+        builder.Entity<Collar>()
+            .HasOne<Bovine>()
+            .WithMany()
+            .HasForeignKey(c => c.BovineId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        /* Subscription Management */
+        builder.Entity<Subscription>().HasKey(s => s.Id);
+        builder.Entity<Subscription>().Property(s => s.Id).IsRequired().ValueGeneratedOnAdd();
+        builder.Entity<Subscription>().Property(s => s.UserId).IsRequired().HasColumnName("user_id");
+        builder.Entity<Subscription>().Property(s => s.Plan).IsRequired()
+            .HasConversion<string>().HasColumnName("plan");
+        builder.Entity<Subscription>().Property(s => s.Status).IsRequired()
+            .HasConversion<string>().HasColumnName("status");
+        builder.Entity<Subscription>().Property(s => s.StartDate).HasColumnName("start_date");
+        builder.Entity<Subscription>().Property(s => s.NextRenewal).HasColumnName("next_renewal");
+        builder.Entity<Subscription>().HasIndex(s => s.UserId).IsUnique();
+
+        // AdditionalCollarRequest
+        builder.Entity<AdditionalCollarRequest>().HasKey(r => r.Id);
+        builder.Entity<AdditionalCollarRequest>().Property(r => r.Id).IsRequired().ValueGeneratedOnAdd();
+        builder.Entity<AdditionalCollarRequest>().Property(r => r.UserId).IsRequired().HasColumnName("user_id");
+        builder.Entity<AdditionalCollarRequest>().Property(r => r.Status).IsRequired()
+            .HasConversion<string>().HasColumnName("status");
+        builder.Entity<AdditionalCollarRequest>().Property(r => r.MonthlyAmount).IsRequired().HasColumnName("monthly_amount");
+        builder.Entity<AdditionalCollarRequest>().Property(r => r.RequestedAt).IsRequired().HasColumnName("requested_at");
 
         /* Alert Management */
         builder.Entity<Alert>().HasKey(a => a.Id);

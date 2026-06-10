@@ -37,12 +37,22 @@ using VacApp_Bovinova_Platform.AlertManagement.Domain.Repositories;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Services;
 using VacApp_Bovinova_Platform.AlertManagement.Infrastructure.Persistence.EFC.Repositories;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Extensions;
+using VacApp_Bovinova_Platform.Shared.Infrastructure.Pipeline.Middleware.Extensions;
 using VacApp_Bovinova_Platform.IoTMonitoring.Application.Internal.CommandServices;
 using VacApp_Bovinova_Platform.IoTMonitoring.Application.Internal.QueryServices;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Repositories;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Services;
 using VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Persistence.EFC.Repositories;
 using VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Messaging;
+using VacApp_Bovinova_Platform.IoTMonitoring.Application.ACL;
+using VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.ACL;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Application.Internal.CommandServices;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Application.Internal.QueryServices;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Repositories;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Services;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Infrastructure.Persistence.EFC.Repositories;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Application.ACL;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Infrastructure.ACL;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Media.Local;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Repositories;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Services;
@@ -56,6 +66,12 @@ using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Services;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.Persistence.EFC.Repositories;
 
 DotEnv.Load();
+
+// Force invariant culture so decimal model binding (e.g. "39.3") is parsed with a
+// dot separator regardless of the host OS locale (es_ES treats "." as thousands,
+// turning 39.3 into 393 and breaking [Range] validation on temperatures).
+System.Globalization.CultureInfo.DefaultThreadCurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = System.Globalization.CultureInfo.InvariantCulture;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -194,6 +210,17 @@ builder.Services.AddScoped<ICampaignQueryService, CampaignQueryService>();
 builder.Services.AddScoped<IBovineHealthRecordRepository, BovineHealthRecordRepository>();
 builder.Services.AddScoped<IBovineHealthRecordCommandService, BovineHealthRecordCommandService>();
 builder.Services.AddScoped<IBovineHealthRecordQueryService, BovineHealthRecordQueryService>();
+builder.Services.AddScoped<ICollarRepository, CollarRepository>();
+builder.Services.AddScoped<ICollarCommandService, CollarCommandService>();
+builder.Services.AddScoped<ICollarQueryService, CollarQueryService>();
+builder.Services.AddScoped<ISubscriptionContextFacade, SubscriptionContextFacade>();
+
+// Subscription Management BC
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+builder.Services.AddScoped<IAdditionalCollarRequestRepository, AdditionalCollarRequestRepository>();
+builder.Services.AddScoped<ISubscriptionCommandService, SubscriptionCommandService>();
+builder.Services.AddScoped<ISubscriptionQueryService, SubscriptionQueryService>();
+builder.Services.AddScoped<ICollarLifecycleFacade, CollarLifecycleFacade>();
 
 // MQTT telemetry ingestion (CON2: collar communicates exclusively over MQTT)
 builder.Services.AddSingleton(new MqttSettings
@@ -260,6 +287,9 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 }
 
 app.UseCors("AllowAllPolicy");
+// Must sit after CORS so error responses keep their CORS headers, and before the
+// auth middleware so its 401s are mapped instead of bubbling up as 500s.
+app.UseRequestExceptionHandling();
 app.UseRequestAuthorization();
 app.UseHttpsRedirection();
 //app.UseAuthentication();

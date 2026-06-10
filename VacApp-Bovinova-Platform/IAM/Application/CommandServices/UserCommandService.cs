@@ -3,6 +3,7 @@ using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Commands;
 using VacApp_Bovinova_Platform.IAM.Domain.Repositories;
 using VacApp_Bovinova_Platform.IAM.Domain.Services;
+using VacApp_Bovinova_Platform.Shared.Domain.Model.Exceptions;
 using VacApp_Bovinova_Platform.Shared.Domain.Repositories;
 
 namespace VacApp_Bovinova_Platform.IAM.Application.CommandServices
@@ -22,7 +23,7 @@ namespace VacApp_Bovinova_Platform.IAM.Application.CommandServices
             var existingUser = await userRepository.FindByEmailAsync(user.Email);
 
             if (existingUser != null)
-                throw new Exception("User already exists");
+                throw new ConflictException("User already exists");
 
             try
             {
@@ -42,7 +43,7 @@ namespace VacApp_Bovinova_Platform.IAM.Application.CommandServices
             var user = await userRepository.FindByEmailAsync(command.Email);
 
             if (user == null || !hashingService.VerifyHash(command.Password, user.Password))
-                throw new Exception("Invalid username or password");
+                throw new UnauthorizedRequestException("Invalid username or password");
 
             return tokenService.GenerateToken(user);
         }
@@ -69,6 +70,17 @@ namespace VacApp_Bovinova_Platform.IAM.Application.CommandServices
                 Console.WriteLine(e.Message);
                 return null;
             }
+        }
+
+        public async Task<User?> Handle(ChangeSubscriptionCommand command)
+        {
+            var user = await userRepository.FindByIdAsync(command.Id);
+            if (user == null)
+                return null;
+
+            user.ChangeSubscription(command.SubscriptionPlan);
+            await unitOfWork.CompleteAsync();
+            return user;
         }
     }
 }

@@ -2,6 +2,7 @@ using VacApp_Bovinova_Platform.IAM.Application.OutBoundServices;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.IAM.Domain.Services;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Attributes;
+using VacApp_Bovinova_Platform.Shared.Domain.Model.Exceptions;
 
 namespace VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Components
 {
@@ -36,13 +37,13 @@ namespace VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Compon
 
 
             // if token is null then throw exception
-            if (token == null) throw new Exception("Null or invalid token");
+            if (token == null) throw new UnauthorizedRequestException("Null or invalid token");
 
             // validate token
             var userId = await tokenService.ValidateToken(token);
 
             // if token is invalid then throw exception
-            if (userId == null) throw new Exception("Invalid token");
+            if (userId == null) throw new UnauthorizedRequestException("Invalid token");
 
             // get user by id
             var getUserByIdQuery = new GetUserByIdQuery(userId.Value);

@@ -232,6 +232,16 @@ namespace VacApp_Bovinova_Platform.Migrations
                         .HasColumnType("longtext")
                         .HasColumnName("password");
 
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("role");
+
+                    b.Property<string>("SubscriptionPlan")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("subscription-plan");
+
                     b.Property<DateTimeOffset?>("UpdatedDate")
                         .HasColumnType("datetime")
                         .HasColumnName("updated-at");
@@ -295,6 +305,49 @@ namespace VacApp_Bovinova_Platform.Migrations
                         .HasDatabaseName("i-x_bovine-health-records_bovine_id");
 
                     b.ToTable("bovine-health-records");
+                });
+
+            modelBuilder.Entity("VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates.Collar", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<int>("BovineId")
+                        .HasColumnType("int")
+                        .HasColumnName("bovine_id");
+
+                    b.Property<string>("DeviceId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("device_id");
+
+                    b.Property<string>("LifecycleStatus")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("lifecycle_status");
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("registered_at");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("p-k_collars");
+
+                    b.HasIndex("BovineId")
+                        .HasDatabaseName("i-x_collars_bovine_id");
+
+                    b.HasIndex("DeviceId")
+                        .IsUnique()
+                        .HasDatabaseName("i-x_collars_device_id");
+
+                    b.ToTable("collars");
                 });
 
             modelBuilder.Entity("VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Aggregates.Bovine", b =>
@@ -480,6 +533,95 @@ namespace VacApp_Bovinova_Platform.Migrations
                     b.ToTable("staff");
                 });
 
+            modelBuilder.Entity("VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model.Aggregates.AdditionalCollarRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CreatedDate")
+                        .HasColumnType("datetime")
+                        .HasColumnName("created-at");
+
+                    b.Property<decimal>("MonthlyAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("monthly_amount");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("requested_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedDate")
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated-at");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("p-k_additional-collar-requests");
+
+                    b.ToTable("additional-collar-requests");
+                });
+
+            modelBuilder.Entity("VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model.Aggregates.Subscription", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CreatedDate")
+                        .HasColumnType("datetime")
+                        .HasColumnName("created-at");
+
+                    b.Property<DateTime?>("NextRenewal")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("next_renewal");
+
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("plan");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("start_date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("SuspendedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("suspended-at");
+
+                    b.Property<DateTimeOffset?>("UpdatedDate")
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated-at");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("p-k_subscriptions");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("i-x_subscriptions_user_id");
+
+                    b.ToTable("subscriptions");
+                });
+
             modelBuilder.Entity("VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates.BovineHealthRecord", b =>
                 {
                     b.HasOne("VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Aggregates.Bovine", null)
@@ -488,6 +630,16 @@ namespace VacApp_Bovinova_Platform.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("f-k_bovine-health-records_-bovine_bovine_id");
+                });
+
+            modelBuilder.Entity("VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates.Collar", b =>
+                {
+                    b.HasOne("VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Aggregates.Bovine", null)
+                        .WithMany()
+                        .HasForeignKey("BovineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("f-k_collars_-bovine_bovine_id");
                 });
 
             modelBuilder.Entity("VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Aggregates.Bovine", b =>

@@ -13,6 +13,8 @@ using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Services;
 using VacApp_Bovinova_Platform.StaffAdministration.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
+using VacApp_Bovinova_Platform.IAM.Interfaces.REST.Resources;
+
 
 namespace VacApp_Bovinova_Platform.IAM.Interfaces.REST
 {
@@ -127,6 +129,34 @@ namespace VacApp_Bovinova_Platform.IAM.Interfaces.REST
 
             var userResource = new UserProfileResource(updatedUser.Username, updatedUser.Email);
             return Ok(userResource);
+        }
+
+        [HttpPut("subscription")]
+        [SwaggerResponse(StatusCodes.Status200OK, "Subscription updated")]
+        public async Task<IActionResult> UpdateSubscription([FromBody] UpdateSubscriptionResource resource)
+        {
+            var user = HttpContext.Items["User"] as User;
+
+            if (user is null)
+                return Unauthorized("User not found in context.");
+
+            try
+            {
+                var command = ChangeSubscriptionCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id);
+                var updatedUser = await commandService.Handle(command);
+
+                if (updatedUser is null) return NotFound("User not found.");
+
+                return Ok(new
+                {
+                    message = "Subscription updated",
+                    subscription = updatedUser.SubscriptionPlan
+                });
+            }
+            catch (ArgumentException e)
+            {
+                return BadRequest(e.Message);
+            }
         }
     }
 }
