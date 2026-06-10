@@ -180,6 +180,8 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.Configure<TokenSettings>(builder.Configuration.GetSection("TokenSettings"));
 
 //Ranch Management BC
+builder.Services.AddScoped<IBovineBreedRepository, BovineBreedRepository>();
+
 builder.Services.AddScoped<IBovineRepository, BovineRepository>();
 builder.Services.AddScoped<IBovineQueryService, BovineQueryService>();
 builder.Services.AddScoped<IBovineCommandService, BovineCommandService>();
@@ -225,14 +227,14 @@ builder.Services.AddScoped<ICollarLifecycleFacade, CollarLifecycleFacade>();
 // MQTT telemetry ingestion (CON2: collar communicates exclusively over MQTT)
 builder.Services.AddSingleton(new MqttSettings
 {
-    Host                = Environment.GetEnvironmentVariable("MQTT_HOST") ?? "localhost",
-    Port                = int.TryParse(Environment.GetEnvironmentVariable("MQTT_PORT"), out var mqttPort) ? mqttPort : 1883,
-    Username            = Environment.GetEnvironmentVariable("MQTT_USERNAME") ?? string.Empty,
-    Password            = Environment.GetEnvironmentVariable("MQTT_PASSWORD") ?? string.Empty,
-    ClientId            = Environment.GetEnvironmentVariable("MQTT_CLIENT_ID") ?? "vacapp-backend",
-    TelemetryTopic      = Environment.GetEnvironmentVariable("MQTT_TELEMETRY_TOPIC") ?? "vacapp/telemetry",
+    Host = Environment.GetEnvironmentVariable("MQTT_HOST") ?? "localhost",
+    Port = int.TryParse(Environment.GetEnvironmentVariable("MQTT_PORT"), out var mqttPort) ? mqttPort : 1883,
+    Username = Environment.GetEnvironmentVariable("MQTT_USERNAME") ?? string.Empty,
+    Password = Environment.GetEnvironmentVariable("MQTT_PASSWORD") ?? string.Empty,
+    ClientId = Environment.GetEnvironmentVariable("MQTT_CLIENT_ID") ?? "vacapp-backend",
+    TelemetryTopic = Environment.GetEnvironmentVariable("MQTT_TELEMETRY_TOPIC") ?? "vacapp/telemetry",
     ResponseTopicPrefix = Environment.GetEnvironmentVariable("MQTT_RESPONSE_TOPIC_PREFIX") ?? "vacapp/telemetry/response",
-    UseTls                     = bool.TryParse(Environment.GetEnvironmentVariable("MQTT_USE_TLS"), out var mqttTls) && mqttTls,
+    UseTls = bool.TryParse(Environment.GetEnvironmentVariable("MQTT_USE_TLS"), out var mqttTls) && mqttTls,
     AllowUntrustedCertificates = bool.TryParse(Environment.GetEnvironmentVariable("MQTT_TLS_ALLOW_UNTRUSTED"), out var mqttUntrusted) && mqttUntrusted
 });
 builder.Services.AddHostedService<MqttTelemetryConsumer>();
@@ -276,7 +278,7 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<AppDbContext>();
-    context.Database.Migrate();  
+    context.Database.Migrate();
 }
 
 // Configure the HTTP request pipeline.

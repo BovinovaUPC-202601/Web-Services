@@ -104,4 +104,18 @@ public class BovineController(IBovineCommandService commandService,
             return NotFound(new { message = "Bovine not found" });
         return Ok(new { message = "Deleted successfully" });
     }
+
+    [AllowAnonymous]
+    [HttpGet("breeds")]
+    [SwaggerOperation(
+        Summary = "Get all bovine breeds",
+        Description = "Get all bovine breeds",
+        OperationId = "GetAllBovineBreeds")]
+    [SwaggerResponse(StatusCodes.Status200OK, "The list of bovine breeds were found", typeof(IEnumerable<BovineBreedResource>))]
+    public async Task<IActionResult> GetAllBovineBreeds()
+    {
+        var breeds = await queryService.Handle(new GetAllBovineBreedsQuery());
+        var breedResources = breeds.Select(BovineBreedResourceFromEntityAssembler.ToResourceFromEntity);
+        return Ok(breedResources);
+    }
 }

@@ -11,6 +11,7 @@ using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.ValueObjects;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Model.Entities;
+using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Entities;
 
 namespace VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configuration;
 
@@ -29,6 +30,7 @@ public class AppDbContext : DbContext
     public DbSet<GeneralChatSession> GeneralChatSessions { get; set; }
     public DbSet<BovineChatSession> BovineChatSessions { get; set; }
     public DbSet<BovineAnalysis> BovineAnalyses { get; set; }
+    public DbSet<BovineBreed> BovineBreeds { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -79,6 +81,23 @@ public class AppDbContext : DbContext
         builder.Entity<Bovine>().Property(f => f.MaxTemperature).IsRequired();
         builder.Entity<Bovine>().Property(f => f.MinHeartRate).IsRequired();
         builder.Entity<Bovine>().Property(f => f.MaxHeartRate).IsRequired();
+
+        //SEED BREEDS
+        builder.Entity<BovineBreed>().HasData(
+            new BovineBreed(1, "Holstein", 38.0, 39.3, 40, 80),
+            new BovineBreed(2, "Jersey", 38.0, 39.4, 42, 82),
+            new BovineBreed(3, "Brown Swiss", 37.9, 39.3, 39, 79),
+            new BovineBreed(4, "Angus", 37.5, 39.0, 35, 75),
+            new BovineBreed(5, "Hereford", 37.8, 39.2, 38, 78),
+            new BovineBreed(6, "Charolais", 37.5, 39.1, 36, 76),
+            new BovineBreed(7, "Limousin", 37.6, 39.1, 36, 76),
+            new BovineBreed(8, "Wagyu", 37.5, 39.0, 35, 75),
+            new BovineBreed(9, "Simmental", 37.8, 39.2, 38, 78),
+            new BovineBreed(10, "Brahman", 38.5, 39.8, 45, 85),
+            new BovineBreed(11, "Nelore", 38.4, 39.7, 44, 84),
+            new BovineBreed(12, "Gyr", 38.3, 39.6, 43, 83),
+            new BovineBreed(13, "Mestizo", 37.5, 39.6, 35, 85)
+        );
 
         // Category
         builder.Entity<Category>().HasKey(f => f.Id);
