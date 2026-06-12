@@ -58,6 +58,10 @@ public class RanchContextFacade(
         context.AppendLine($"Breed: {bovine.Breed}");
         context.AppendLine($"Birth date: {bovine.BirthDate:yyyy-MM-dd}");
         context.AppendLine($"Stable id: {bovine.StableId}");
+        context.AppendLine(
+            $"Normal temperature range for this bovine: {bovine.MinTemperature:0.0}-{bovine.MaxTemperature:0.0} C");
+        context.AppendLine(
+            $"Normal heart rate range for this bovine: {bovine.MinHeartRate}-{bovine.MaxHeartRate} bpm");
         return context.ToString();
     }
 }
