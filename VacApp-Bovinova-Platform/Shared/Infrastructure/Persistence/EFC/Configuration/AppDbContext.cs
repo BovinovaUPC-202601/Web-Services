@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configuration.Extensions;
 using VacApp_Bovinova_Platform.StaffAdministration.Domain.Model.Aggregates;
+using VacApp_Bovinova_Platform.StaffAdministration.Domain.Model.ValueObjects;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates;
@@ -134,6 +135,17 @@ public class AppDbContext : DbContext
                     .HasColumnName("employee_status");
             });
         builder.Entity<Staff>().Property(f => f.UserId).IsRequired().HasColumnName("user_id");
+        builder.Entity<Staff>().Property(f => f.Email).IsRequired()
+            .HasMaxLength(150).HasColumnName("email").HasDefaultValue("");
+        builder.Entity<Staff>().Property(f => f.LinkedUserId).HasColumnName("linked_user_id");
+        builder.Entity<Staff>().Property(f => f.AccessLevel).IsRequired()
+            .HasConversion<int>().HasColumnName("access_level")
+            .HasDefaultValue(StaffAccessLevel.ReadOnly);
+        // One linked user per owner. MySQL exempts NULL linked_user_id rows from
+        // uniqueness, so legacy staff (not linked) never collide. Owner+email
+        // duplicates are validated at service level instead of a unique index,
+        // because legacy rows share the '' default email per owner.
+        builder.Entity<Staff>().HasIndex(f => new { f.UserId, f.LinkedUserId }).IsUnique();
 
         /* Campaign Management */
         builder.Entity<Campaign>().HasKey(c => c.Id);

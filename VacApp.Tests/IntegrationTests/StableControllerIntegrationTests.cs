@@ -10,6 +10,7 @@ using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Resources;
 using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Transform;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Commands;
+using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
 
 namespace VacApp.Tests.IntegrationTests
 {
@@ -17,6 +18,7 @@ namespace VacApp.Tests.IntegrationTests
     {
         private readonly Mock<IStableCommandService> _commandServiceMock;
         private readonly Mock<IStableQueryService> _queryServiceMock;
+        private readonly Mock<IStaffAccessService> _staffAccessMock;
         private readonly StableController _controller;
         private readonly User _user;
 
@@ -24,10 +26,16 @@ namespace VacApp.Tests.IntegrationTests
         {
             _commandServiceMock = new Mock<IStableCommandService>();
             _queryServiceMock = new Mock<IStableQueryService>();
+            _staffAccessMock = new Mock<IStaffAccessService>();
 
             _user = new User(new SignUpCommand("usuario", "email@email.com", "pass"));
 
-            _controller = new StableController(_commandServiceMock.Object, _queryServiceMock.Object);
+            // Default: owner with full access operating on its own data.
+            _staffAccessMock.Setup(x => x.CanEditAsync(It.IsAny<User>())).ReturnsAsync(true);
+            _staffAccessMock.Setup(x => x.GetEffectiveUserIdAsync(It.IsAny<User>())).ReturnsAsync((User u) => u.Id);
+
+            _controller = new StableController(
+                _commandServiceMock.Object, _queryServiceMock.Object, _staffAccessMock.Object);
             _controller.ControllerContext.HttpContext = new DefaultHttpContext();
             _controller.ControllerContext.HttpContext.Items["User"] = _user;
         }
@@ -90,6 +98,7 @@ namespace VacApp.Tests.IntegrationTests
         {
             // Arrange
             var stable = new Stable(new CreateStableCommand("Stable A", 10, _user.Id));
+            _queryServiceMock.Setup(x => x.Handle(It.IsAny<GetStablesByIdQuery>())).ReturnsAsync(stable);
             _commandServiceMock.Setup(x => x.Handle(It.IsAny<UpdateStableCommand>())).ReturnsAsync(stable);
 
             var resource = new UpdateStableResource { Name = "Stable Updated", Limit = 20 };
@@ -109,6 +118,7 @@ namespace VacApp.Tests.IntegrationTests
         {
             // Arrange
             var stable = new Stable(new CreateStableCommand("Stable A", 10, _user.Id));
+            _queryServiceMock.Setup(x => x.Handle(It.IsAny<GetStablesByIdQuery>())).ReturnsAsync(stable);
             _commandServiceMock.Setup(x => x.Handle(It.IsAny<DeleteStableCommand>())).ReturnsAsync(stable);
 
             // Act

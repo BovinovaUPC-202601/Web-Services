@@ -6,6 +6,7 @@ using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Services;
 using VacApp_Bovinova_Platform.IoTMonitoring.Interfaces.REST.Resources;
 using VacApp_Bovinova_Platform.IoTMonitoring.Interfaces.REST.Transform;
+using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
 
 namespace VacApp_Bovinova_Platform.IoTMonitoring.Interfaces.REST;
 
@@ -15,7 +16,8 @@ namespace VacApp_Bovinova_Platform.IoTMonitoring.Interfaces.REST;
 [Route("api/v1/iot-monitoring")]
 [Produces(MediaTypeNames.Application.Json)]
 public class BovineHealthRecordController(
-    IBovineHealthRecordQueryService queryService)
+    IBovineHealthRecordQueryService queryService,
+    IStaffAccessService staffAccessService)
     : ControllerBase
 {
     // NOTE: telemetry ingestion is NOT exposed over HTTP. Per constraint CON2 the
@@ -23,7 +25,7 @@ public class BovineHealthRecordController(
     // MqttTelemetryConsumer. This controller only serves read queries to the apps.
 
     /// <summary>
-    /// Returns the full telemetry history for a bovine. Requires JWT.
+    /// Returns the full telemetry history for a bovine of the effective ranch owner. Requires JWT.
     /// </summary>
     [HttpGet("bovines/{bovineId}/records")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -33,13 +35,15 @@ public class BovineHealthRecordController(
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
 
-        var records = await queryService.Handle(new GetHealthRecordsByBovineIdQuery(bovineId, user.Id));
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var records = await queryService.Handle(new GetHealthRecordsByBovineIdQuery(bovineId, effectiveUserId));
         var resources = records.Select(BovineHealthRecordResourceFromEntityAssembler.ToResourceFromEntity);
         return Ok(resources);
     }
 
     /// <summary>
-    /// Returns the most recent reading for a bovine. Requires JWT.
+    /// Returns the most recent reading for a bovine of the effective ranch owner. Requires JWT.
     /// </summary>
     [HttpGet("bovines/{bovineId}/latest")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -50,22 +54,10 @@ public class BovineHealthRecordController(
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
 
-        var record = await queryService.Handle(new GetLatestHealthRecordByBovineIdQuery(bovineId, user.Id));
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var record = await queryService.Handle(new GetLatestHealthRecordByBovineIdQuery(bovineId, effectiveUserId));
         if (record is null) return NotFound();
         return Ok(BovineHealthRecordResourceFromEntityAssembler.ToResourceFromEntity(record));
-    }
-
-
-        private IActionResult? ValidatePlusSubscription()
-    {
-        var user = HttpContext.Items["User"] as User;
-
-        if (user is null)
-            return Unauthorized("User not found in context.");
-
-        if (user.SubscriptionPlan != "Plus")
-            return Forbid();
-
-        return null;
     }
 }

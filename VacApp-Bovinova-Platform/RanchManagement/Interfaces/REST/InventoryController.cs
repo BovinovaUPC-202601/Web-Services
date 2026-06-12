@@ -8,6 +8,7 @@ using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Services;
 using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Resources;
 using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Transform;
+using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
 
 namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST;
 
@@ -20,14 +21,19 @@ public class InventoryController(
     ICategoryCommandService categoryCommandService,
     ICategoryQueryService categoryQueryService,
     IProductCommandService productCommandService,
-    IProductQueryService productQueryService) : ControllerBase
+    IProductQueryService productQueryService,
+    IStaffAccessService staffAccessService) : ControllerBase
 {
+    private ObjectResult ForbiddenEdit() =>
+        StatusCode(StatusCodes.Status403Forbidden,
+            new { message = "Read-only staff cannot create, edit or delete." });
+
     #region Category Endpoints
 
     [HttpPost("categories")]
     [SwaggerOperation(
         Summary = "Create a new category",
-        Description = "Creates a new category associated with the authenticated user.",
+        Description = "Creates a new category associated with the effective ranch owner.",
         OperationId = "CreateCategory"
     )]
     [SwaggerResponse(StatusCodes.Status201Created, "Category successfully created", typeof(CategoryResource))]
@@ -39,7 +45,10 @@ public class InventoryController(
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var command = CreateCategoryCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id);
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var command = CreateCategoryCommandFromResourceAssembler.ToCommandFromResource(resource, effectiveUserId);
         var result = await categoryCommandService.Handle(command);
         if (result is null) return BadRequest();
         return CreatedAtAction(nameof(GetCategoryById), new { id = result.Id },
@@ -58,7 +67,9 @@ public class InventoryController(
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var categories = await categoryQueryService.Handle(new GetCategoriesByUserIdQuery(user.Id));
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var categories = await categoryQueryService.Handle(new GetCategoriesByUserIdQuery(effectiveUserId));
         var categoryResources = categories.Select(CategoryResourceFromEntityAssembler.ToResourceFromEntity);
         return Ok(categoryResources);
     }
@@ -70,9 +81,16 @@ public class InventoryController(
         OperationId = "GetCategoryById")]
     public async Task<ActionResult> GetCategoryById(int id)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
         var getCategoryById = new GetCategoryByIdQuery(id);
         var result = await categoryQueryService.Handle(getCategoryById);
-        if (result is null) return NotFound();
+        // NotFound (not Forbidden) when the category belongs to another ranch.
+        if (result is null || result.UserId != effectiveUserId) return NotFound();
         var resources = CategoryResourceFromEntityAssembler.ToResourceFromEntity(result);
         return Ok(resources);
     }
@@ -80,6 +98,17 @@ public class InventoryController(
     [HttpPut("categories/{id}")]
     public async Task<IActionResult> UpdateCategory(int id, [FromBody] UpdateCategoryResource resource)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var existing = await categoryQueryService.Handle(new GetCategoryByIdQuery(id));
+        if (existing is null || existing.UserId != effectiveUserId)
+            return NotFound(new { message = "Category not found" });
+
         var command = UpdateCategoryCommandFromResourceAssembler.ToCommandFromResource(id, resource);
         var result = await categoryCommandService.Handle(command);
         if (result is null) return NotFound(new { message = "Category not found" });
@@ -95,6 +124,17 @@ public class InventoryController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteCategory(int id)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var existing = await categoryQueryService.Handle(new GetCategoryByIdQuery(id));
+        if (existing is null || existing.UserId != effectiveUserId)
+            return NotFound(new { message = "Category not found" });
+
         var command = new DeleteCategoryCommand(id);
         var result = await categoryCommandService.Handle(command);
         if (result is null)
@@ -109,7 +149,7 @@ public class InventoryController(
     [HttpPost("products")]
     [SwaggerOperation(
         Summary = "Create a new product",
-        Description = "Creates a new product associated with the authenticated user.",
+        Description = "Creates a new product associated with the effective ranch owner.",
         OperationId = "CreateProduct"
     )]
     [SwaggerResponse(StatusCodes.Status201Created, "Product successfully created", typeof(ProductResource))]
@@ -121,7 +161,10 @@ public class InventoryController(
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var command = CreateProductCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id);
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var command = CreateProductCommandFromResourceAssembler.ToCommandFromResource(resource, effectiveUserId);
         var result = await productCommandService.Handle(command);
         if (result is null) return BadRequest();
         return CreatedAtAction(nameof(GetProductById), new { id = result.Id },
@@ -140,7 +183,9 @@ public class InventoryController(
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var products = await productQueryService.Handle(new GetProductsByUserIdQuery(user.Id));
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var products = await productQueryService.Handle(new GetProductsByUserIdQuery(effectiveUserId));
         var productResources = products.Select(ProductResourceFromEntityAssembler.ToResourceFromEntity);
         return Ok(productResources);
     }
@@ -152,9 +197,16 @@ public class InventoryController(
         OperationId = "GetProductById")]
     public async Task<ActionResult> GetProductById(int id)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
         var getProductById = new GetProductByIdQuery(id);
         var result = await productQueryService.Handle(getProductById);
-        if (result is null) return NotFound();
+        // NotFound (not Forbidden) when the product belongs to another ranch.
+        if (result is null || result.UserId != effectiveUserId) return NotFound();
         var resources = ProductResourceFromEntityAssembler.ToResourceFromEntity(result);
         return Ok(resources);
     }
@@ -162,6 +214,17 @@ public class InventoryController(
     [HttpPut("products/{id}")]
     public async Task<IActionResult> UpdateProduct(int id, [FromBody] UpdateProductResource resource)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var existing = await productQueryService.Handle(new GetProductByIdQuery(id));
+        if (existing is null || existing.UserId != effectiveUserId)
+            return NotFound(new { message = "Product not found" });
+
         var command = UpdateProductCommandFromResourceAssembler.ToCommandFromResource(id, resource);
         var result = await productCommandService.Handle(command);
         if (result is null) return NotFound(new { message = "Product not found" });
@@ -177,6 +240,17 @@ public class InventoryController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteProduct(int id)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var existing = await productQueryService.Handle(new GetProductByIdQuery(id));
+        if (existing is null || existing.UserId != effectiveUserId)
+            return NotFound(new { message = "Product not found" });
+
         var command = new DeleteProductCommand(id);
         var result = await productCommandService.Handle(command);
         if (result is null)
