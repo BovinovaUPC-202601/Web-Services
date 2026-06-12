@@ -298,3 +298,5 @@ app.UseHttpsRedirection();
 //app.UseAuthorization();
 app.MapControllers();
 app.Run();
+
+//Restart action 1
