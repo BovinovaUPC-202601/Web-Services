@@ -3,6 +3,7 @@ using System.Text.Json;
 using MQTTnet;
 using MQTTnet.Client;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Commands;
+using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Repositories;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Services;
 
 namespace VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Messaging;
@@ -129,11 +130,33 @@ public class MqttTelemetryConsumer : BackgroundService
 
         // The command pipeline is scoped (DbContext, repositories), so open a scope per message.
         using var scope = _scopeFactory.CreateScope();
+
+        // Resolve bovine/owner from the collar registered for this device — the device
+        // only sends its deviceId, so the binding lives server-side (single source of truth).
+        var collarRepository = scope.ServiceProvider.GetRequiredService<ICollarRepository>();
+        var collar = await collarRepository.FindByDeviceIdAsync(message.DeviceId);
+
+        if (collar is null)
+        {
+            _logger.LogWarning(
+                "Discarding telemetry from unregistered device {DeviceId}. Register the collar in the app first.",
+                message.DeviceId);
+            return;
+        }
+
+        if (!collar.IsActive)
+        {
+            _logger.LogWarning(
+                "Discarding telemetry from device {DeviceId}: collar is {Status}, not Active.",
+                message.DeviceId, collar.LifecycleStatus);
+            return;
+        }
+
         var commandService = scope.ServiceProvider.GetRequiredService<IBovineHealthRecordCommandService>();
 
         var record = await commandService.Handle(new CreateBovineHealthRecordCommand(
-            BovineId:     message.BovineId,
-            UserId:       message.UserId,
+            BovineId:     collar.BovineId,
+            UserId:       collar.UserId,
             DeviceId:     message.DeviceId,
             Temperature:  message.Temperature,
             HeartRate:    message.HeartRate,

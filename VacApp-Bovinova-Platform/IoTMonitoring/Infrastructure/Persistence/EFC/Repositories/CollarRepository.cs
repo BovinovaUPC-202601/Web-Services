@@ -24,6 +24,10 @@ public class CollarRepository(AppDbContext context)
         => await Context.Set<Collar>()
             .AnyAsync(c => c.DeviceId == deviceId);
 
+    public async Task<Collar?> FindByDeviceIdAsync(string deviceId)
+        => await Context.Set<Collar>()
+            .FirstOrDefaultAsync(c => c.DeviceId == deviceId);
+
     public async Task<bool> ExistsActiveByBovineIdAsync(int bovineId)
         => await Context.Set<Collar>()
             .AnyAsync(c => c.BovineId == bovineId && c.LifecycleStatus == CollarLifecycleStatus.Active);
