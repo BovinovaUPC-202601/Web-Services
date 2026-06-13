@@ -28,6 +28,7 @@ namespace VacApp.Tests.IntegrationTests
         private readonly Mock<IProductQueryService> _productQueryMock;
         private readonly Mock<IStaffQueryService> _staffQueryMock;
         private readonly Mock<IStableQueryService> _stableQueryMock;
+        private readonly Mock<IStaffAccessService> _staffAccessMock;
         private readonly UserController _controller;
 
         public UserControllerIntegrationTests()
@@ -39,6 +40,17 @@ namespace VacApp.Tests.IntegrationTests
             _productQueryMock = new Mock<IProductQueryService>();
             _staffQueryMock = new Mock<IStaffQueryService>();
             _stableQueryMock = new Mock<IStableQueryService>();
+            _staffAccessMock = new Mock<IStaffAccessService>();
+
+            // Default: the authenticated user is an owner (not staff) with full access.
+            _staffAccessMock.Setup(x => x.GetActiveStaffAccessAsync(It.IsAny<User>())).ReturnsAsync((Staff?)null);
+            _staffAccessMock.Setup(x => x.GetEffectiveUserIdAsync(It.IsAny<User>())).ReturnsAsync((User u) => u.Id);
+            _staffAccessMock.Setup(x => x.GetEffectiveOwnerAsync(It.IsAny<User>())).ReturnsAsync((User u) => u);
+            _staffAccessMock.Setup(x => x.IsStaffAsync(It.IsAny<User>())).ReturnsAsync(false);
+            _staffAccessMock.Setup(x => x.IsOwnerAsync(It.IsAny<User>())).ReturnsAsync(true);
+            _staffAccessMock.Setup(x => x.CanReadAsync(It.IsAny<User>())).ReturnsAsync(true);
+            _staffAccessMock.Setup(x => x.CanEditAsync(It.IsAny<User>())).ReturnsAsync(true);
+            _staffAccessMock.Setup(x => x.CanManageStaffAsync(It.IsAny<User>())).ReturnsAsync(true);
 
             _controller = new UserController(
                 _commandServiceMock.Object,
@@ -47,7 +59,8 @@ namespace VacApp.Tests.IntegrationTests
                 _campaignQueryMock.Object,
                 _productQueryMock.Object,
                 _staffQueryMock.Object,
-                _stableQueryMock.Object
+                _stableQueryMock.Object,
+                _staffAccessMock.Object
             );
         }
 
@@ -143,6 +156,15 @@ namespace VacApp.Tests.IntegrationTests
             var expected = new UserInfoResource(
                 user.Id,
                 user.Username,
+                user.Email,
+                user.SubscriptionPlan,
+                false,
+                user.Id,
+                "Owner",
+                true,
+                true,
+                true,
+                true,
                 0, 0, 0, 0, 0,
                 Array.Empty<CampaignInfoResource>()
             );

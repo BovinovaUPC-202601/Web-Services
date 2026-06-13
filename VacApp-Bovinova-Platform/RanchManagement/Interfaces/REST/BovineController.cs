@@ -8,6 +8,7 @@ using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Services;
 using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Resources;
 using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Transform;
+using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
 
 namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST;
 
@@ -17,12 +18,17 @@ namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST;
 [Produces(MediaTypeNames.Application.Json)]
 [Tags("Bovines")]
 public class BovineController(IBovineCommandService commandService,
-    IBovineQueryService queryService) : ControllerBase
+    IBovineQueryService queryService,
+    IStaffAccessService staffAccessService) : ControllerBase
 {
+    private ObjectResult ForbiddenEdit() =>
+        StatusCode(StatusCodes.Status403Forbidden,
+            new { message = "Read-only staff cannot create, edit or delete." });
+
     [HttpPost]
     [SwaggerOperation(
         Summary = "Create a new bovine",
-        Description = "Creates a new bovine associated with the authenticated user.",
+        Description = "Creates a new bovine associated with the effective ranch owner.",
         OperationId = "CreateBovines"
     )]
     [SwaggerResponse(StatusCodes.Status201Created, "Bovine successfully created", typeof(BovineResource))]
@@ -35,7 +41,10 @@ public class BovineController(IBovineCommandService commandService,
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var command = CreateBovineCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id);
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var command = CreateBovineCommandFromResourceAssembler.ToCommandFromResource(resource, effectiveUserId);
         var result = await commandService.Handle(command);
         if (result is null) return BadRequest();
         return CreatedAtAction(nameof(GetBovineById), new { id = result.Id },
@@ -54,7 +63,9 @@ public class BovineController(IBovineCommandService commandService,
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var bovines = await queryService.Handle(new GetAllBovinesQuery(user.Id));
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var bovines = await queryService.Handle(new GetAllBovinesQuery(effectiveUserId));
         var bovineResources = bovines.Select(BovineResourceFromEntityAssembler.ToResourceFromEntity);
         return Ok(bovineResources);
     }
@@ -62,9 +73,17 @@ public class BovineController(IBovineCommandService commandService,
     [HttpGet("{id}")]
     public async Task<ActionResult> GetBovineById(int id)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
         var getBovineById = new GetBovinesByIdQuery(id);
         var result = await queryService.Handle(getBovineById);
-        if (result is null) return NotFound();
+        // NotFound (not Forbidden) when the bovine belongs to another ranch,
+        // so the endpoint does not leak the existence of foreign data.
+        if (result is null || result.UserId != effectiveUserId) return NotFound();
         var resources = BovineResourceFromEntityAssembler.ToResourceFromEntity(result);
         return Ok(resources);
     }
@@ -76,9 +95,16 @@ public class BovineController(IBovineCommandService commandService,
         OperationId = "GetBovinesByStableId")]
     public async Task<ActionResult> GetBovinesByStableId(int stableId)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
         var getBovinesByStableIdQuery = new GetBovinesByStableIdQuery(stableId);
-        var bovines = await queryService.Handle(getBovinesByStableIdQuery);
-        if (bovines == null || !bovines.Any())
+        var bovines = (await queryService.Handle(getBovinesByStableIdQuery))
+            ?.Where(b => b.UserId == effectiveUserId).ToList();
+        if (bovines == null || bovines.Count == 0)
             return NotFound();
         var bovineResources = bovines.Select(BovineResourceFromEntityAssembler.ToResourceFromEntity);
         return Ok(bovineResources);
@@ -87,6 +113,16 @@ public class BovineController(IBovineCommandService commandService,
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateBovine(int id, UpdateBovineResource resource)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var existing = await queryService.Handle(new GetBovinesByIdQuery(id));
+        if (existing is null || existing.UserId != effectiveUserId) return NotFound();
+
         var command = UpdateBovineCommandFromResourceAssembler.ToCommandFromResource(id, resource);
         var result = await commandService.Handle(command);
         if (result is null) return BadRequest();
@@ -98,6 +134,17 @@ public class BovineController(IBovineCommandService commandService,
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteBovine(int id)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var existing = await queryService.Handle(new GetBovinesByIdQuery(id));
+        if (existing is null || existing.UserId != effectiveUserId)
+            return NotFound(new { message = "Bovine not found" });
+
         var command = new DeleteBovineCommand(id);
         var result = await commandService.Handle(command);
         if (result is null)

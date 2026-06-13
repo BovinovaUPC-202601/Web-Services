@@ -8,6 +8,7 @@ using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model.Commands;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Services;
+using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Interfaces.REST.Resources;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Interfaces.REST.Transform;
 
@@ -21,9 +22,23 @@ namespace VacApp_Bovinova_Platform.SubscriptionManagement.Interfaces.REST;
 public class SubscriptionController(
     ISubscriptionCommandService commandService,
     ISubscriptionQueryService queryService,
-    ICollarQueryService collarQueryService)
+    ICollarQueryService collarQueryService,
+    IStaffAccessService staffAccessService)
     : ControllerBase
 {
+    /// <summary>
+    /// Subscription management is owner-only: staff of any level get 403.
+    /// Note this intentionally does NOT use effectiveUserId — staff must never
+    /// manage (nor read) the owner's subscription. Returns null when allowed.
+    /// </summary>
+    private async Task<IActionResult?> ForbidStaffAsync(User user)
+    {
+        if (await staffAccessService.IsStaffAsync(user))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { message = "Only the ranch owner can manage the subscription." });
+        return null;
+    }
+
     /// <summary>Lists the available plans with prices, features and included collars (TS020).</summary>
     [AllowAnonymous]
     [HttpGet("plans")]
@@ -49,6 +64,8 @@ public class SubscriptionController(
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
 
+        if (await ForbidStaffAsync(user) is { } forbidden) return forbidden;
+
         // Self-heal any drift between the IAM flag and the subscription aggregate
         // (the frontend hits this on every layout mount), so [RequiresPlus] stays correct.
         await commandService.SyncIamPlanAsync(user.Id);
@@ -69,6 +86,8 @@ public class SubscriptionController(
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
 
+        if (await ForbidStaffAsync(user) is { } forbidden) return forbidden;
+
         var subscription = await commandService.Handle(new ActivatePlusCommand(user.Id));
         var activeCollars = await collarQueryService.GetActiveCountAsync(user.Id);
         return Ok(SubscriptionResourceFromEntityAssembler.ToResourceFromEntity(subscription, activeCollars));
@@ -82,6 +101,8 @@ public class SubscriptionController(
     {
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
+
+        if (await ForbidStaffAsync(user) is { } forbidden) return forbidden;
 
         try
         {
@@ -102,6 +123,8 @@ public class SubscriptionController(
     {
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
+
+        if (await ForbidStaffAsync(user) is { } forbidden) return forbidden;
 
         var subscription = await commandService.Handle(new CancelSubscriptionCommand(user.Id));
         if (subscription is null) return NotFound("Subscription not found.");

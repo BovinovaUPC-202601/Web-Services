@@ -10,6 +10,7 @@ using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Resources;
 using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Transform;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Commands;
+using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
 
 namespace VacApp.Tests.IntegrationTests
 {
@@ -19,6 +20,7 @@ namespace VacApp.Tests.IntegrationTests
         private readonly Mock<ICategoryQueryService> _categoryQueryServiceMock;
         private readonly Mock<IProductCommandService> _productCommandServiceMock;
         private readonly Mock<IProductQueryService> _productQueryServiceMock;
+        private readonly Mock<IStaffAccessService> _staffAccessMock;
         private readonly InventoryController _controller;
         private readonly User _user;
 
@@ -28,14 +30,20 @@ namespace VacApp.Tests.IntegrationTests
             _categoryQueryServiceMock = new Mock<ICategoryQueryService>();
             _productCommandServiceMock = new Mock<IProductCommandService>();
             _productQueryServiceMock = new Mock<IProductQueryService>();
+            _staffAccessMock = new Mock<IStaffAccessService>();
 
             _user = new User(new SignUpCommand("usuario", "email@email.com", "pass"));
+
+            // Default: owner with full access operating on its own data.
+            _staffAccessMock.Setup(x => x.CanEditAsync(It.IsAny<User>())).ReturnsAsync(true);
+            _staffAccessMock.Setup(x => x.GetEffectiveUserIdAsync(It.IsAny<User>())).ReturnsAsync((User u) => u.Id);
 
             _controller = new InventoryController(
                 _categoryCommandServiceMock.Object,
                 _categoryQueryServiceMock.Object,
                 _productCommandServiceMock.Object,
-                _productQueryServiceMock.Object
+                _productQueryServiceMock.Object,
+                _staffAccessMock.Object
             );
 
             _controller.ControllerContext.HttpContext = new DefaultHttpContext();
@@ -103,6 +111,8 @@ namespace VacApp.Tests.IntegrationTests
         {
             // Arrange
             var category = new Category(new CreateCategoryCommand("Cat A", _user.Id));
+            _categoryQueryServiceMock.Setup(x => x.Handle(It.IsAny<GetCategoryByIdQuery>()))
+                .ReturnsAsync(category);
             _categoryCommandServiceMock.Setup(x => x.Handle(It.IsAny<DeleteCategoryCommand>()))
                 .ReturnsAsync(category);
 
@@ -176,6 +186,8 @@ namespace VacApp.Tests.IntegrationTests
         {
             // Arrange
             var product = new Product(new CreateProductCommand("Prod A", 1, 5, _user.Id, null));
+            _productQueryServiceMock.Setup(x => x.Handle(It.IsAny<GetProductByIdQuery>()))
+                .ReturnsAsync(product);
             _productCommandServiceMock.Setup(x => x.Handle(It.IsAny<DeleteProductCommand>()))
                 .ReturnsAsync(product);
 

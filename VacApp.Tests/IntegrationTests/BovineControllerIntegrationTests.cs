@@ -10,6 +10,7 @@ using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Resources;
 using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Transform;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Commands;
+using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
 
 namespace VacApp.Tests.IntegrationTests
 {
@@ -17,6 +18,7 @@ namespace VacApp.Tests.IntegrationTests
     {
         private readonly Mock<IBovineCommandService> _commandServiceMock;
         private readonly Mock<IBovineQueryService> _queryServiceMock;
+        private readonly Mock<IStaffAccessService> _staffAccessMock;
         private readonly BovineController _controller;
         private readonly User _user;
 
@@ -24,10 +26,16 @@ namespace VacApp.Tests.IntegrationTests
         {
             _commandServiceMock = new Mock<IBovineCommandService>();
             _queryServiceMock = new Mock<IBovineQueryService>();
+            _staffAccessMock = new Mock<IStaffAccessService>();
 
             _user = new User(new SignUpCommand("usuario", "email@email.com", "pass"));
 
-            _controller = new BovineController(_commandServiceMock.Object, _queryServiceMock.Object);
+            // Default: owner with full access operating on its own data.
+            _staffAccessMock.Setup(x => x.CanEditAsync(It.IsAny<User>())).ReturnsAsync(true);
+            _staffAccessMock.Setup(x => x.GetEffectiveUserIdAsync(It.IsAny<User>())).ReturnsAsync((User u) => u.Id);
+
+            _controller = new BovineController(
+                _commandServiceMock.Object, _queryServiceMock.Object, _staffAccessMock.Object);
             _controller.ControllerContext.HttpContext = new DefaultHttpContext();
             _controller.ControllerContext.HttpContext.Items["User"] = _user;
         }
@@ -121,6 +129,7 @@ namespace VacApp.Tests.IntegrationTests
             // Arrange
             var bovine = new Bovine(new CreateBovineCommand("Bovi", "male", DateOnly.FromDateTime(DateTime.Today),
                 "Angus", 1, "img.jpg", _user.Id, Stream.Null));
+            _queryServiceMock.Setup(x => x.Handle(It.IsAny<GetBovinesByIdQuery>())).ReturnsAsync(bovine);
             _commandServiceMock.Setup(x => x.Handle(It.IsAny<UpdateBovineCommand>())).ReturnsAsync(bovine);
 
             var resource = new UpdateBovineResource
@@ -148,6 +157,7 @@ namespace VacApp.Tests.IntegrationTests
             // Arrange
             var bovine = new Bovine(new CreateBovineCommand("Bovi", "male", DateOnly.FromDateTime(DateTime.Today),
                 "Angus", 1, "img.jpg", _user.Id, Stream.Null));
+            _queryServiceMock.Setup(x => x.Handle(It.IsAny<GetBovinesByIdQuery>())).ReturnsAsync(bovine);
             _commandServiceMock.Setup(x => x.Handle(It.IsAny<DeleteBovineCommand>())).ReturnsAsync(bovine);
 
             // Act

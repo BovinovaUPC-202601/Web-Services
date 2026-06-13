@@ -8,6 +8,7 @@ using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Services;
 using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Resources;
 using VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Transform;
+using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
 
 namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST;
 
@@ -18,12 +19,17 @@ namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST;
 [Tags("Stables")]
 public class StableController(
    IStableCommandService commandService,
-   IStableQueryService queryService) : ControllerBase
+   IStableQueryService queryService,
+   IStaffAccessService staffAccessService) : ControllerBase
 {
+    private ObjectResult ForbiddenEdit() =>
+        StatusCode(StatusCodes.Status403Forbidden,
+            new { message = "Read-only staff cannot create, edit or delete." });
+
     [HttpPost]
     [SwaggerOperation(
         Summary = "Create a new stable",
-        Description = "Creates a new stable associated with the authenticated user.",
+        Description = "Creates a new stable associated with the effective ranch owner.",
         OperationId = "CreateStables"
     )]
     [SwaggerResponse(StatusCodes.Status201Created, "Stable successfully created", typeof(StableResource))]
@@ -35,7 +41,10 @@ public class StableController(
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var command = CreateStableCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id);
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var command = CreateStableCommandFromResourceAssembler.ToCommandFromResource(resource, effectiveUserId);
         var result = await commandService.Handle(command);
         if (result is null) return BadRequest();
         return CreatedAtAction(nameof(GetStableById), new { id = result.Id },
@@ -54,7 +63,9 @@ public class StableController(
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var stables = await queryService.Handle(new GetAllStablesQuery(user.Id));
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var stables = await queryService.Handle(new GetAllStablesQuery(effectiveUserId));
         var stableResources = stables.Select(StableResourceFromEntityAssembler.ToResourceFromEntity);
         return Ok(stableResources);
     }
@@ -62,9 +73,16 @@ public class StableController(
     [HttpGet("{id}")]
     public async Task<ActionResult> GetStableById(int id)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
         var getStableById = new GetStablesByIdQuery(id);
         var result = await queryService.Handle(getStableById);
-        if (result is null) return NotFound();
+        // NotFound (not Forbidden) when the stable belongs to another ranch.
+        if (result is null || result.UserId != effectiveUserId) return NotFound();
         var resources = StableResourceFromEntityAssembler.ToResourceFromEntity(result);
         return Ok(resources);
     }
@@ -72,6 +90,16 @@ public class StableController(
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateStable(int id, [FromBody] UpdateStableResource resource)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var existing = await queryService.Handle(new GetStablesByIdQuery(id));
+        if (existing is null || existing.UserId != effectiveUserId) return NotFound();
+
         var command = UpdateStableCommandFromResourceAssembler.ToCommandFromResource(id, resource);
         var result = await commandService.Handle(command);
         if (result is null) return BadRequest();
@@ -83,6 +111,17 @@ public class StableController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteStable(int id)
     {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("User not found in context.");
+
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var existing = await queryService.Handle(new GetStablesByIdQuery(id));
+        if (existing is null || existing.UserId != effectiveUserId)
+            return NotFound(new { message = "Stable not found" });
+
         var command = new DeleteStableCommand(id);
         var result = await commandService.Handle(command);
         if (result is null)
