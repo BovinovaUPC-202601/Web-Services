@@ -22,6 +22,10 @@ public class AIController(
     IAIAssistantQueryService queryService,
     IStaffAccessService staffAccessService) : ControllerBase
 {
+    private ObjectResult ForbiddenEdit() =>
+        StatusCode(StatusCodes.Status403Forbidden,
+            new { message = "Read-only staff cannot create, edit or delete." });
+
     [HttpPost("general-chat")]
     [SwaggerOperation(
         Summary = "Send a general farm chat message",
@@ -135,6 +139,9 @@ public class AIController(
         if (user is null)
             return Unauthorized("User not found in context.");
 
+        // Persisting a photo analysis creates ranch data, so read-only staff are blocked
+        // here just like on any other create endpoint (chat stays available to all active staff).
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
         var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
         var command = AnalyzePhotoCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id, effectiveUserId);
         var result = await commandService.Handle(command);
