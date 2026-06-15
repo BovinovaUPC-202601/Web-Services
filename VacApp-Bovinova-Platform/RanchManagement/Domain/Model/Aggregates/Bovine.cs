@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Commands;
+using ValidationException = VacApp_Bovinova_Platform.Shared.Domain.Model.Exceptions.ValidationException;
 
 namespace VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Aggregates;
 
@@ -78,7 +79,7 @@ public class Bovine
     public Bovine(CreateBovineCommand command)
     {
         if (!command.Gender.ToLower().Equals("male") && !command.Gender.ToLower().Equals("female"))
-            throw new ArgumentException("Gender must be either 'male' or 'female'");
+            throw new ValidationException("El género debe ser 'male' o 'female'.");
 
         Name = command.Name;
         Gender = command.Gender;
@@ -101,10 +102,11 @@ public class Bovine
         if (command.Gender is not null)
         {
             if (!command.Gender.ToLower().Equals("male") && !command.Gender.ToLower().Equals("female"))
-                throw new ArgumentException("Gender must be either 'male' or 'female'");
+                throw new ValidationException("El género debe ser 'male' o 'female'.");
             Gender = command.Gender;
         }
-        if (command.BirthDate.HasValue) BirthDate = command.BirthDate.Value;
+        if (command.BirthDate.HasValue)
+            BirthDate = command.BirthDate.Value;
         if (command.Breed is not null) Breed = command.Breed;
         if (command.StableId.HasValue) StableId = command.StableId.Value;
         if (command.MinTemperature.HasValue) MinTemperature = command.MinTemperature.Value;

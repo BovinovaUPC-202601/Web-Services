@@ -1,8 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace VacApp_Bovinova_Platform.CampaignManagement.Interfaces.REST.Resources;
 
 public record UpdateCampaignResource(
-    string Name,
-    string Description,
+    [Required] string Name,
+    [Required] string Description,
     DateOnly StartDate,
     DateOnly EndDate
 );

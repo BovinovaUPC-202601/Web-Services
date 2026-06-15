@@ -4,10 +4,10 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Resources;
 
 public record CreateBovineResource(
-    string Name,
-    string Gender,
+    [Required] string Name,
+    [Required] string Gender,
     DateOnly BirthDate,
-    string Breed,
+    [Required] string Breed,
     [Required]
     IFormFile FileData,
     int StableId,
