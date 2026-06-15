@@ -23,7 +23,9 @@ public class SubscriptionController(
     ISubscriptionCommandService commandService,
     ISubscriptionQueryService queryService,
     ICollarQueryService collarQueryService,
-    IStaffAccessService staffAccessService)
+    IStaffAccessService staffAccessService,
+    IPaymentReminderService reminderService,
+    ISubscriptionSuspensionService suspensionService)
     : ControllerBase
 {
     /// <summary>
@@ -164,5 +166,25 @@ public class SubscriptionController(
         if (request is null) return NotFound("Request not found.");
         return Ok(new AdditionalCollarResource(
             request.Id, request.Status.ToString(), request.MonthlyAmount, request.RequestedAt));
+    }
+
+    /// <summary>Admin: runs the pre-renewal payment reminder sweep now (also runs daily).</summary>
+    [RequiresAdmin]
+    [HttpPost("reminders/run")]
+    [SwaggerResponse(StatusCodes.Status200OK, "Reminders processed")]
+    public async Task<IActionResult> RunReminders()
+    {
+        var sent = await reminderService.SendDueRemindersAsync();
+        return Ok(new { message = "Reminders processed", sent });
+    }
+
+    /// <summary>Admin: suspends all overdue-unpaid Plus subscriptions now (also runs daily).</summary>
+    [RequiresAdmin]
+    [HttpPost("suspensions/run")]
+    [SwaggerResponse(StatusCodes.Status200OK, "Overdue subscriptions suspended")]
+    public async Task<IActionResult> RunSuspensions()
+    {
+        var suspended = await suspensionService.SuspendOverdueAsync();
+        return Ok(new { message = "Overdue subscriptions processed", suspended });
     }
 }

@@ -4,5 +4,6 @@ public enum AlertType
 {
     BiometricAnomaly, // triggered by IoTMonitoring (temperature/heartRate out of range).
                       // The specific condition (fever, hypothermia, tachycardia, …) lives in the alert message.
-    VisualAnomaly     // triggered by AIAssistant (high urgency visual diagnosis)
+    VisualAnomaly,    // triggered by AIAssistant (high urgency visual diagnosis)
+    CollarReturn      // account-level: Plus plan ended (suspension) → user must return the IoT collars
 }
