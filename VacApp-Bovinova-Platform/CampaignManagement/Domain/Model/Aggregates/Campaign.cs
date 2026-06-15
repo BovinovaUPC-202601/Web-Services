@@ -1,4 +1,5 @@
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Commands;
+using VacApp_Bovinova_Platform.Shared.Domain.Model.Exceptions;
 
 namespace VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates;
 
@@ -19,8 +20,16 @@ public class Campaign
         EndDate = DateOnly.FromDateTime(DateTime.Now);
     }
 
+    private static void ValidateDates(DateOnly startDate, DateOnly endDate)
+    {
+        if (startDate > endDate)
+            throw new ValidationException("La fecha de inicio no puede ser posterior a la fecha de fin.");
+    }
+
     public Campaign(string name, string description, DateOnly startDate, DateOnly endDate, int userId)
     {
+        ValidateDates(startDate, endDate);
+
         Name = name;
         Description = description;
         StartDate = startDate;
@@ -30,6 +39,8 @@ public class Campaign
 
     public Campaign(CreateCampaignCommand command)
     {
+        ValidateDates(command.StartDate, command.EndDate);
+
         Name = command.Name;
         Description = command.Description;
         StartDate = command.StartDate;
@@ -40,6 +51,8 @@ public class Campaign
     // Actualiza los campos editables de la campaña.
     public void Update(UpdateCampaignCommand command)
     {
+        ValidateDates(command.StartDate, command.EndDate);
+
         Name = command.Name;
         Description = command.Description;
         StartDate = command.StartDate;

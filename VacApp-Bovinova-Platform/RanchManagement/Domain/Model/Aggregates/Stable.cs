@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Commands;
+using ValidationException = VacApp_Bovinova_Platform.Shared.Domain.Model.Exceptions.ValidationException;
 
 namespace VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Aggregates;
 
@@ -27,12 +28,10 @@ public class Stable
     public Stable(CreateStableCommand command)
     {
         if (command.Limit <= 0)
-        {
-            throw new ArgumentException("Limit must be greater than 0");
-        }
+            throw new ValidationException("La capacidad debe ser mayor a 0.");
 
         if (string.IsNullOrEmpty(command.Name))
-            throw new ArgumentException("Name must not be empty");
+            throw new ValidationException("El nombre no puede estar vacío.");
 
         Limit = command.Limit;
         Name = command.Name;
@@ -42,9 +41,10 @@ public class Stable
     public void Update(UpdateStableCommand command)
     {
         if (command.Limit <= 0)
-        {
-            throw new ArgumentException("Limit must be greater than 0");
-        }
+            throw new ValidationException("La capacidad debe ser mayor a 0.");
+
+        if (string.IsNullOrEmpty(command.Name))
+            throw new ValidationException("El nombre no puede estar vacío.");
 
         Limit = command.Limit;
         Name = command.Name;

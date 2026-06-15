@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Commands;
+using ValidationException = VacApp_Bovinova_Platform.Shared.Domain.Model.Exceptions.ValidationException;
 
 namespace VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Aggregates;
 

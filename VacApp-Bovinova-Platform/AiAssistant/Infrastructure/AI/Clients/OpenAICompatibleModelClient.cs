@@ -1,8 +1,10 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Configuration;
+using VacApp_Bovinova_Platform.Shared.Domain.Model.Exceptions;
 
 namespace VacApp_Bovinova_Platform.AIAssistant.Infrastructure.AI.Clients;
 
@@ -36,6 +38,12 @@ public class OpenAICompatibleModelClient(
 
         using var response = await httpClient.SendAsync(httpRequest);
         var responseBody = await response.Content.ReadAsStringAsync();
+
+        // Surfaced as a 429 (not a generic 500) so the frontend can tell the user the
+        // assistant is rate-limited and to retry, instead of "an unexpected error".
+        if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            throw new RateLimitedException(
+                "El asistente de IA está recibiendo demasiadas solicitudes en este momento. Espera unos segundos e inténtalo de nuevo.");
 
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException($"Local model request failed with status {(int)response.StatusCode}: {responseBody}");

@@ -5,8 +5,8 @@ namespace VacApp_Bovinova_Platform.AIAssistant.Interfaces.REST.Transform;
 
 public static class AnalyzePhotoCommandFromResourceAssembler
 {
-    public static AnalyzePhotoCommand ToCommandFromResource(AnalyzePhotoResource resource, int userId)
+    public static AnalyzePhotoCommand ToCommandFromResource(AnalyzePhotoResource resource, int userId, int effectiveUserId)
     {
-        return new AnalyzePhotoCommand(userId, resource.BovineId, resource.ImageBase64);
+        return new AnalyzePhotoCommand(userId, effectiveUserId, resource.BovineId, resource.ImageBase64);
     }
 }

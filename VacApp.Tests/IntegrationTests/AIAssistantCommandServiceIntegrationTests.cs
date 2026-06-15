@@ -54,7 +54,7 @@ public class AIAssistantCommandServiceIntegrationTests
             .ReturnsAsync("Farm context response.");
 
         var service = CreateService();
-        var command = new SendGeneralChatCommand(userId, "Summarize my ranch status.");
+        var command = new SendGeneralChatCommand(userId, userId, "Summarize my ranch status.");
 
         // Act
         var response = await service.Handle(command);
@@ -127,7 +127,7 @@ public class AIAssistantCommandServiceIntegrationTests
             .ReturnsAsync("Bovine-specific response.");
 
         var service = CreateService();
-        var command = new SendBovineChatCommand(userId, bovineId, "What should I check for Lola?");
+        var command = new SendBovineChatCommand(userId, userId, bovineId, "What should I check for Lola?");
 
         // Act
         var response = await service.Handle(command);
@@ -177,7 +177,7 @@ public class AIAssistantCommandServiceIntegrationTests
             .ReturnsAsync(analysis);
 
         var service = CreateService();
-        var command = new AnalyzePhotoCommand(userId, bovineId, imageBase64);
+        var command = new AnalyzePhotoCommand(userId, userId, bovineId, imageBase64);
 
         // Act
         var result = await service.Handle(command);

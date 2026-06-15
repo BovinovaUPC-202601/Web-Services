@@ -2,12 +2,14 @@ using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Commands;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Repositories;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Services;
+using VacApp_Bovinova_Platform.Shared.Domain.Model.Exceptions;
 using VacApp_Bovinova_Platform.Shared.Domain.Repositories;
 
 namespace VacApp_Bovinova_Platform.RanchManagement.Application.Internal.CommandServices;
 
 public class StableCommandService(
     IStableRepository stableRepository,
+    IBovineRepository bovineRepository,
     IUnitOfWork unitOfWork
     ) : IStableCommandService
 {
@@ -31,12 +33,18 @@ public class StableCommandService(
 
     public async Task<Stable?> Handle(UpdateStableCommand command)
     {
-        // Verifies if the stable exists
         var stable = await stableRepository.FindByIdAsync(command.Id);
         if (stable == null)
-            throw new Exception($"Stable with ID '{command.Id}' not found.");
+            throw new NotFoundException($"Stable con ID '{command.Id}' no encontrado.");
 
-        // Updates the stable entity
+        if (command.Limit < stable.Limit)
+        {
+            var animalCount = await bovineRepository.CountBovinesByStableIdAsync(command.Id);
+            if (animalCount > command.Limit)
+                throw new ValidationException(
+                    $"No se puede reducir la capacidad a {command.Limit} porque el establo tiene {animalCount} animales.");
+        }
+
         stable.Update(command);
 
         try
@@ -58,7 +66,7 @@ public class StableCommandService(
         // Verifies if the stable exists
         var stable = await stableRepository.FindByIdAsync(command.Id);
         if (stable == null)
-            throw new Exception($"Stable with ID '{command.Id}' not found.");
+            throw new NotFoundException($"Stable con ID '{command.Id}' no encontrado.");
 
         try
         {
