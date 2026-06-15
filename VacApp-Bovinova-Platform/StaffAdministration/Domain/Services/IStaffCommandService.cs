@@ -10,4 +10,10 @@ public interface IStaffCommandService
     Task<Staff?> Handle(UpdateStaffCommand command);
     
     Task<Staff?> Handle(DeleteStaffCommand command);
+
+    Task<Staff?> Handle(CreateStaffWithNewUserCommand command);
+
+    Task<Staff?> Handle(GrantStaffAccessToExistingUserCommand command);
+
+    Task<Staff?> Handle(UpdateStaffAccessCommand command);
 }

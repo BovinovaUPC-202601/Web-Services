@@ -12,11 +12,11 @@ public class StaffQueryService(IStaffRepository staffRepository) : IStaffQuerySe
         return await staffRepository.FindByUserIdAsync(query.UserId);
     }
 
-    public async Task<Staff> Handle(GetStaffByIdQuery query)
+    public async Task<Staff?> Handle(GetStaffByIdQuery query)
     {
-        var staff = await staffRepository.FindByIdAsync(query.Id);
-        if (staff == null) throw new Exception($"Staff with ID '{query.Id}' not found.");
-        return staff;
+        // Returns null instead of throwing so controllers can apply the
+        // ownership check and answer 404 without leaking foreign records.
+        return await staffRepository.FindByIdAsync(query.Id);
     }
 
     public async Task<IEnumerable<Staff>> Handle(GetStaffByEmployeeStatusQuery query)

@@ -2,12 +2,12 @@ namespace VacApp_Bovinova_Platform.IoTMonitoring.Infrastructure.Messaging;
 
 /// <summary>
 /// Shape of the JSON the collar (ESP32) publishes to the telemetry topic.
-/// Mirrors User Story E01: deviceId, temperature, heartRate, batteryLevel, timestamp.
+/// The collar only knows its own hardware identity (deviceId) plus metrics.
+/// The server resolves bovineId/userId from the registered Collar — the device
+/// never carries business ids, so it cannot spoof another bovine.
 /// </summary>
 public class TelemetryMessage
 {
-    public int    BovineId     { get; set; }
-    public int    UserId       { get; set; }
     public string DeviceId     { get; set; } = string.Empty;
     public float  Temperature  { get; set; }
     public float  HeartRate    { get; set; }

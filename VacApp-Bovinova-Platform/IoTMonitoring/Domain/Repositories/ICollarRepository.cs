@@ -8,5 +8,6 @@ public interface ICollarRepository : IBaseRepository<Collar>
     Task<IEnumerable<Collar>> FindByUserIdAsync(int userId);
     Task<int> CountActiveByUserIdAsync(int userId);
     Task<bool> ExistsByDeviceIdAsync(string deviceId);
+    Task<Collar?> FindByDeviceIdAsync(string deviceId);
     Task<bool> ExistsActiveByBovineIdAsync(int bovineId);
 }

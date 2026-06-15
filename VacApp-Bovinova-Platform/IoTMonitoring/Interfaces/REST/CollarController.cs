@@ -10,12 +10,14 @@ using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Services;
 using VacApp_Bovinova_Platform.IoTMonitoring.Interfaces.REST.Resources;
 using VacApp_Bovinova_Platform.IoTMonitoring.Interfaces.REST.Transform;
+using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
 
 namespace VacApp_Bovinova_Platform.IoTMonitoring.Interfaces.REST;
 
 /// <summary>
 /// Collar registration, status and capacity. The whole controller requires the
-/// Plus plan ([RequiresPlus]); Free users have no access to collars at all.
+/// Plus plan ([RequiresPlus], resolved against the effective owner); Free users
+/// have no access to collars at all.
 /// </summary>
 [Authorize]
 [RequiresPlus]
@@ -27,9 +29,14 @@ public class CollarController(
     ICollarCommandService commandService,
     ICollarQueryService queryService,
     ISubscriptionContextFacade subscriptionContext,
-    IBovineHealthRecordQueryService healthRecordQueryService)
+    IBovineHealthRecordQueryService healthRecordQueryService,
+    IStaffAccessService staffAccessService)
     : ControllerBase
 {
+    private ObjectResult ForbiddenEdit() =>
+        StatusCode(StatusCodes.Status403Forbidden,
+            new { message = "Read-only staff cannot manage collars." });
+
     /// <summary>Registers a collar (ESP32 device) and assigns it to a bovine.</summary>
     [HttpPost]
     [SwaggerResponse(StatusCodes.Status201Created, "Collar registered", typeof(CollarResource))]
@@ -40,9 +47,12 @@ public class CollarController(
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
 
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
         try
         {
-            var command = new RegisterCollarCommand(user.Id, resource.DeviceId, resource.BovineId);
+            var command = new RegisterCollarCommand(effectiveUserId, resource.DeviceId, resource.BovineId);
             var collar = await commandService.Handle(command);
             return CreatedAtAction(nameof(GetMyCollars),
                 CollarResourceFromEntityAssembler.ToResourceFromEntity(collar));
@@ -57,7 +67,7 @@ public class CollarController(
         }
     }
 
-    /// <summary>Lists the user's collars with operational/lifecycle status and last reading (TP).</summary>
+    /// <summary>Lists the effective owner's collars with operational/lifecycle status and last reading (TP).</summary>
     [HttpGet]
     [SwaggerResponse(StatusCodes.Status200OK, "Collar statuses", typeof(IEnumerable<CollarStatusResource>))]
     public async Task<IActionResult> GetMyCollars()
@@ -65,13 +75,15 @@ public class CollarController(
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
 
-        var collars = await queryService.Handle(new GetCollarsByUserIdQuery(user.Id));
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var collars = await queryService.Handle(new GetCollarsByUserIdQuery(effectiveUserId));
 
         var statuses = new List<CollarStatusResource>();
         foreach (var collar in collars)
         {
             var latest = await healthRecordQueryService.Handle(
-                new GetLatestHealthRecordByBovineIdQuery(collar.BovineId, user.Id));
+                new GetLatestHealthRecordByBovineIdQuery(collar.BovineId, effectiveUserId));
 
             statuses.Add(new CollarStatusResource(
                 collar.Id,
@@ -89,7 +101,7 @@ public class CollarController(
         return Ok(statuses);
     }
 
-    /// <summary>Returns current collar usage and allowance for the authenticated user.</summary>
+    /// <summary>Returns current collar usage and allowance for the effective ranch owner.</summary>
     [HttpGet("capacity")]
     [SwaggerResponse(StatusCodes.Status200OK, "Collar capacity", typeof(CollarCapacityResource))]
     public async Task<IActionResult> GetCapacity()
@@ -97,12 +109,14 @@ public class CollarController(
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
 
-        var active = await queryService.GetActiveCountAsync(user.Id);
-        var allowance = await subscriptionContext.GetCollarAllowanceAsync(user.Id);
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var active = await queryService.GetActiveCountAsync(effectiveUserId);
+        var allowance = await subscriptionContext.GetCollarAllowanceAsync(effectiveUserId);
         return Ok(new CollarCapacityResource(active, allowance, Math.Max(0, allowance - active)));
     }
 
-    /// <summary>Reassigns one of the user's collars to a different bovine.</summary>
+    /// <summary>Reassigns one of the effective owner's collars to a different bovine.</summary>
     [HttpPut("{collarId:int}")]
     [SwaggerResponse(StatusCodes.Status200OK, "Collar reassigned", typeof(CollarResource))]
     [SwaggerResponse(StatusCodes.Status400BadRequest, "Bovine not owned or already has a collar")]
@@ -113,9 +127,13 @@ public class CollarController(
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
 
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
         try
         {
-            var command = new ReassignCollarCommand(collarId, user.Id, resource.BovineId);
+            // The command service validates collar/bovine ownership against the user id it receives.
+            var command = new ReassignCollarCommand(collarId, effectiveUserId, resource.BovineId);
             var collar = await commandService.Handle(command);
             return Ok(CollarResourceFromEntityAssembler.ToResourceFromEntity(collar));
         }
@@ -125,7 +143,7 @@ public class CollarController(
         }
     }
 
-    /// <summary>Deletes (unassigns) one of the user's collars, freeing capacity.</summary>
+    /// <summary>Deletes (unassigns) one of the effective owner's collars, freeing capacity.</summary>
     [HttpDelete("{collarId:int}")]
     [SwaggerResponse(StatusCodes.Status204NoContent, "Collar deleted")]
     [SwaggerResponse(StatusCodes.Status404NotFound, "Collar not found")]
@@ -134,9 +152,12 @@ public class CollarController(
         var user = HttpContext.Items["User"] as User;
         if (user is null) return Unauthorized("User not found in context.");
 
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
         try
         {
-            await commandService.Handle(new DeleteCollarCommand(collarId, user.Id));
+            await commandService.Handle(new DeleteCollarCommand(collarId, effectiveUserId));
             return NoContent();
         }
         catch (InvalidOperationException e)

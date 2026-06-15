@@ -20,7 +20,7 @@ public class IoTContextFacade(IBovineHealthRecordQueryService healthRecordQueryS
             return "No hay lecturas de telemetria IoT registradas para este bovino.";
 
         var context = new StringBuilder();
-        context.AppendLine($"Lecturas IoT recientes del bovino (maximo {MaxReadingsInContext}, rangos normales: temperatura 38.0-39.5 C, ritmo cardiaco 40-80 bpm):");
+        context.AppendLine($"Lecturas IoT recientes del bovino (maximo {MaxReadingsInContext}; los rangos normales son los umbrales propios del bovino indicados en el contexto del bovino, no valores fijos):");
 
         foreach (var record in records)
         {

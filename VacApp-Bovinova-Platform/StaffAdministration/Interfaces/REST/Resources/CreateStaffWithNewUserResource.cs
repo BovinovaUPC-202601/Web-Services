@@ -1,11 +1,8 @@
 namespace VacApp_Bovinova_Platform.StaffAdministration.Interfaces.REST.Resources;
 
-public record StaffResource(
-    int Id,
+public record CreateStaffWithNewUserResource(
     string Name,
     string Email,
-    int EmployeeStatus,
-    int AccessLevel,
-    int UserId,
-    int? LinkedUserId
+    string Password,
+    int AccessLevel
     );

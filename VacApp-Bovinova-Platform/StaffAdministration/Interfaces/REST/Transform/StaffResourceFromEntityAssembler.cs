@@ -10,8 +10,11 @@ public static class StaffResourceFromEntityAssembler
         return new StaffResource(
             entity.Id,
             entity.Name,
+            entity.Email,
             entity.EmployeeStatus.Value,
-            entity.UserId
+            (int)entity.AccessLevel,
+            entity.UserId,
+            entity.LinkedUserId
         );
     }
 }
