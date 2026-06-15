@@ -7,6 +7,7 @@ using VacApp_Bovinova_Platform.AIAssistant.Interfaces.REST.Resources;
 using VacApp_Bovinova_Platform.AIAssistant.Interfaces.REST.Transform;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Attributes;
+using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
 
 namespace VacApp_Bovinova_Platform.AIAssistant.Interfaces.REST;
 
@@ -18,7 +19,8 @@ namespace VacApp_Bovinova_Platform.AIAssistant.Interfaces.REST;
 [Tags("AI Assistant")]
 public class AIController(
     IAIAssistantCommandService commandService,
-    IAIAssistantQueryService queryService) : ControllerBase
+    IAIAssistantQueryService queryService,
+    IStaffAccessService staffAccessService) : ControllerBase
 {
     [HttpPost("general-chat")]
     [SwaggerOperation(
@@ -33,7 +35,8 @@ public class AIController(
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var command = SendGeneralChatCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id);
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+        var command = SendGeneralChatCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id, effectiveUserId);
         var result = await commandService.Handle(command);
         return Ok(new ChatResponseResource(result, "GENERAL"));
     }
@@ -72,7 +75,8 @@ public class AIController(
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var command = SendBovineChatCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id);
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+        var command = SendBovineChatCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id, effectiveUserId);
         var result = await commandService.Handle(command);
         return Ok(new ChatResponseResource(result, "BOVINE"));
     }
@@ -111,7 +115,8 @@ public class AIController(
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var analyses = await queryService.Handle(new GetBovineAnalysesQuery(user.Id, bovineId));
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+        var analyses = await queryService.Handle(new GetBovineAnalysesQuery(effectiveUserId, bovineId));
         var resources = analyses.Select(BovineAnalysisResourceFromEntityAssembler.ToResourceFromEntity);
         return Ok(resources);
     }
@@ -130,7 +135,8 @@ public class AIController(
         if (user is null)
             return Unauthorized("User not found in context.");
 
-        var command = AnalyzePhotoCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id);
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+        var command = AnalyzePhotoCommandFromResourceAssembler.ToCommandFromResource(resource, user.Id, effectiveUserId);
         var result = await commandService.Handle(command);
         if (result is null) return BadRequest();
 

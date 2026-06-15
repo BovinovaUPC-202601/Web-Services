@@ -31,7 +31,7 @@ public class AIAssistantCommandService(
         var isNewSession = session is null;
         session ??= new GeneralChatSession(command.UserId);
 
-        var systemPrompt = BuildGeneralSystemPrompt(await ranchContextFacade.GetGeneralRanchContextAsync(command.UserId));
+        var systemPrompt = BuildGeneralSystemPrompt(await ranchContextFacade.GetGeneralRanchContextAsync(command.EffectiveUserId));
         var response = EnsureResponse(await aiChatService.GenerateResponseAsync(systemPrompt, session.GetMessages(), command.Message));
 
         session.AddMessage(new ChatMessage("user", command.Message, DateTime.UtcNow));
@@ -55,10 +55,10 @@ public class AIAssistantCommandService(
         var isNewSession = session is null;
         session ??= new BovineChatSession(command.UserId, command.BovineId);
 
-        var bovineContext = await ranchContextFacade.GetBovineContextAsync(command.UserId, command.BovineId);
+        var bovineContext = await ranchContextFacade.GetBovineContextAsync(command.EffectiveUserId, command.BovineId);
         var analysisContext = await BuildPreviousAnalysisContext(command.BovineId);
-        var alertContext = await alertContextFacade.GetBovineAlertContextAsync(command.UserId, command.BovineId);
-        var telemetryContext = await ioTContextFacade.GetBovineTelemetryContextAsync(command.UserId, command.BovineId);
+        var alertContext = await alertContextFacade.GetBovineAlertContextAsync(command.EffectiveUserId, command.BovineId);
+        var telemetryContext = await ioTContextFacade.GetBovineTelemetryContextAsync(command.EffectiveUserId, command.BovineId);
         var systemPrompt = BuildBovineSystemPrompt(bovineContext, analysisContext, alertContext, telemetryContext);
         var response = EnsureResponse(await aiChatService.GenerateResponseAsync(systemPrompt, session.GetMessages(), command.Message));
 
@@ -79,9 +79,9 @@ public class AIAssistantCommandService(
         if (string.IsNullOrWhiteSpace(command.ImageBase64))
             throw new ArgumentException("ImageBase64 must not be empty", nameof(command.ImageBase64));
 
-        var bovineContext = await ranchContextFacade.GetBovineContextAsync(command.UserId, command.BovineId);
+        var bovineContext = await ranchContextFacade.GetBovineContextAsync(command.EffectiveUserId, command.BovineId);
         var analysis = await aiVisionService.AnalyzeBovinePhotoAsync(
-            command.UserId,
+            command.EffectiveUserId,
             command.BovineId,
             bovineContext,
             command.ImageBase64);
