@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using EntityFrameworkCore.CreatedUpdatedDate.Contracts;
 using VacApp_Bovinova_Platform.IAM.Domain.Model;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Commands;
+using ValidationException = VacApp_Bovinova_Platform.Shared.Domain.Model.Exceptions.ValidationException;
 namespace VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates
 {
     public class User : IEntityWithCreatedUpdatedDate
@@ -38,7 +39,7 @@ namespace VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates
             Email = command.Email;
             if (!System.Text.RegularExpressions.Regex.IsMatch(Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
             {
-                throw new ArgumentException("Invalid email format.", nameof(command.Email));
+                throw new ValidationException("El formato del email no es válido.");
             }
         }
 
@@ -54,7 +55,7 @@ namespace VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates
         public void ChangeSubscription(string plan)
         {
             if (!SubscriptionPlans.IsValid(plan))
-                throw new ArgumentException($"Invalid subscription plan: '{plan}'.", nameof(plan));
+                throw new ValidationException($"Plan de suscripción inválido: '{plan}'.");
 
             SubscriptionPlan = plan;
         }

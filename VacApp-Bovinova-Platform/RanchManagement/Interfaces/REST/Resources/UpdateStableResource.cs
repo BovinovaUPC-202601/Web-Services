@@ -1,13 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Resources;
 
 public class UpdateStableResource
 {
-    /*
-     *
-    string Name,
-    int Limit
-     */
-    
+    [Required]
     public string Name { get; set; }
     public int Limit { get; set; }
 }
