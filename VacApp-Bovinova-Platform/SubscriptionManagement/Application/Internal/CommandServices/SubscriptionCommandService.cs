@@ -1,7 +1,11 @@
+using MediatR;
 using VacApp_Bovinova_Platform.IAM.Domain.Model;
 using VacApp_Bovinova_Platform.IAM.Domain.Repositories;
+using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Queries;
+using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Services;
 using VacApp_Bovinova_Platform.Shared.Domain.Repositories;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Application.ACL;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Events;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model.Commands;
@@ -15,6 +19,8 @@ public class SubscriptionCommandService(
     IAdditionalCollarRequestRepository additionalCollarRepository,
     IUserRepository userRepository,
     ICollarLifecycleFacade collarLifecycle,
+    ICollarQueryService collarQueryService,
+    IMediator mediator,
     IUnitOfWork unitOfWork)
     : ISubscriptionCommandService
 {
@@ -80,6 +86,10 @@ public class SubscriptionCommandService(
 
         await unitOfWork.CompleteAsync();
         await collarLifecycle.SuspendUserCollarsAsync(command.UserId);
+
+        // Plan ended → tell the user to return their collars (account-level alert).
+        var collars = await collarQueryService.Handle(new GetCollarsByUserIdQuery(command.UserId));
+        await mediator.Publish(new SubscriptionEndedEvent(command.UserId, collars.Count()));
         return subscription;
     }
 

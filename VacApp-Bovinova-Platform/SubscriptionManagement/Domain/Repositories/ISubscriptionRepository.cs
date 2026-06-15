@@ -9,4 +9,7 @@ public interface ISubscriptionRepository : IBaseRepository<Subscription>
 
     /// <summary>Subscriptions that are suspended or cancelled (for the recovery report).</summary>
     Task<IEnumerable<Subscription>> FindInactiveAsync();
+
+    /// <summary>Active Plus subscriptions with a renewal date set (for pre-renewal reminders).</summary>
+    Task<IEnumerable<Subscription>> FindActivePlusWithRenewalAsync();
 }
