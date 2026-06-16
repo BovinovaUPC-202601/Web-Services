@@ -12,7 +12,8 @@ public static class UpdateCampaignCommandFromResourceAssembler
             resource.Name,
             resource.Description,
             resource.StartDate,
-            resource.EndDate
+            resource.EndDate,
+            resource.StableIds
         );
     }
 }

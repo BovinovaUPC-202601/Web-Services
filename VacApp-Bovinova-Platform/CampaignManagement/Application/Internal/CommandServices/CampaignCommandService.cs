@@ -2,16 +2,27 @@ using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Commands;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Repositories;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Services;
+using VacApp_Bovinova_Platform.RanchManagement.Domain.Repositories;
 using VacApp_Bovinova_Platform.Shared.Domain.Model.Exceptions;
 using VacApp_Bovinova_Platform.Shared.Domain.Repositories;
 
 namespace VacApp_Bovinova_Platform.CampaignManagement.Application.Internal.CommandServices;
 
-public class CampaignCommandService(ICampaignRepository campaignRepository, IUnitOfWork unitOfWork)
+public class CampaignCommandService(
+    ICampaignRepository campaignRepository,
+    IUnitOfWork unitOfWork,
+    IStableRepository stableRepository)
 : ICampaignCommandService
 {
     public async Task<Campaign?> Handle(CreateCampaignCommand command)
     {
+        foreach (var stableId in command.StableIds)
+        {
+            var stable = await stableRepository.FindByIdAsync(stableId);
+            if (stable is null)
+                throw new NotFoundException($"Establo con ID '{stableId}' no encontrado.");
+        }
+
         var campaign = new Campaign(command);
 
         await campaignRepository.AddAsync(campaign);
@@ -25,6 +36,13 @@ public class CampaignCommandService(ICampaignRepository campaignRepository, IUni
         var campaign = await campaignRepository.FindByIdAsync(command.Id);
         if (campaign is null)
             throw new NotFoundException("Campaña no encontrada.");
+
+        foreach (var stableId in command.StableIds)
+        {
+            var stable = await stableRepository.FindByIdAsync(stableId);
+            if (stable is null)
+                throw new NotFoundException($"Establo con ID '{stableId}' no encontrado.");
+        }
 
         campaign.Update(command);
 

@@ -5,7 +5,7 @@ namespace VacApp_Bovinova_Platform.CampaignManagement.Interfaces.REST.Transform;
 
 public static class CampaignResourceFromEntityAssembler
 {
-    public static CampaignResource ToResourceFromEntity(Campaign campaign)
+    public static CampaignResource ToResourceFromEntity(Campaign campaign, List<string>? stableNames = null)
     {
         return new CampaignResource(
                campaign.Id,
@@ -13,6 +13,8 @@ public static class CampaignResourceFromEntityAssembler
                campaign.Description,
                campaign.StartDate,
                campaign.EndDate,
-               campaign.UserId);
+               campaign.UserId,
+               campaign.CampaignStables.Select(cs => cs.StableId).ToList(),
+               stableNames ?? new List<string>());
     }
 }

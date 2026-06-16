@@ -5,5 +5,6 @@ public record CreateCampaignCommand(
     string Description,
     DateOnly StartDate,
     DateOnly EndDate,
-    int UserId
+    int UserId,
+    List<int> StableIds
     );

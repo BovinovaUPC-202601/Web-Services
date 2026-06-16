@@ -1,4 +1,5 @@
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Commands;
+using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Entities;
 using VacApp_Bovinova_Platform.Shared.Domain.Model.Exceptions;
 
 namespace VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates;
@@ -11,6 +12,8 @@ public class Campaign
     public DateOnly StartDate { get; private set; }
     public DateOnly EndDate { get; private set; }
     public int UserId { get; private set; }
+
+    public ICollection<CampaignStable> CampaignStables { get; private set; } = new List<CampaignStable>();
 
     protected Campaign()
     {
@@ -46,9 +49,10 @@ public class Campaign
         StartDate = command.StartDate;
         EndDate = command.EndDate;
         UserId = command.UserId;
+        foreach (var stableId in command.StableIds)
+            CampaignStables.Add(new CampaignStable(stableId));
     }
 
-    // Actualiza los campos editables de la campaña.
     public void Update(UpdateCampaignCommand command)
     {
         ValidateDates(command.StartDate, command.EndDate);
@@ -57,5 +61,8 @@ public class Campaign
         Description = command.Description;
         StartDate = command.StartDate;
         EndDate = command.EndDate;
+        CampaignStables.Clear();
+        foreach (var stableId in command.StableIds)
+            CampaignStables.Add(new CampaignStable(stableId));
     }
 }

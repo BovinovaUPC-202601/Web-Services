@@ -12,7 +12,8 @@ public static class CreateCampaignCommandFromResourceAssembler
                    resource.Description,
                    resource.StartDate,
                    resource.EndDate,
-                   userId
+                   userId,
+                   resource.StableIds
                    );
 
     }
