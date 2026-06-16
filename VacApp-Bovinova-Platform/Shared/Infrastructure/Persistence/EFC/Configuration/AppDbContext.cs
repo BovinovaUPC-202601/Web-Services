@@ -6,6 +6,7 @@ using VacApp_Bovinova_Platform.StaffAdministration.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.StaffAdministration.Domain.Model.ValueObjects;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates;
+using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Entities;
 using VacApp_Bovinova_Platform.IoTMonitoring.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.Aggregates;
@@ -33,6 +34,7 @@ public class AppDbContext : DbContext
     public DbSet<BovineChatSession> BovineChatSessions { get; set; }
     public DbSet<BovineAnalysis> BovineAnalyses { get; set; }
     public DbSet<BovineBreed> BovineBreeds { get; set; }
+    public DbSet<CampaignStable> CampaignStables { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -156,6 +158,14 @@ public class AppDbContext : DbContext
         builder.Entity<Campaign>().Property(c => c.StartDate).IsRequired();
         builder.Entity<Campaign>().Property(c => c.EndDate).IsRequired();
         builder.Entity<Campaign>().Property(c => c.UserId).IsRequired().HasColumnName("user_id");
+        builder.Entity<Campaign>().HasMany(c => c.CampaignStables)
+            .WithOne()
+            .HasForeignKey(cs => cs.CampaignId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<CampaignStable>().HasKey(cs => new { cs.CampaignId, cs.StableId });
+        builder.Entity<CampaignStable>().Property(cs => cs.CampaignId).IsRequired().HasColumnName("campaign_id");
+        builder.Entity<CampaignStable>().Property(cs => cs.StableId).IsRequired().HasColumnName("stable_id");
 
         /* IoT Monitoring */
         builder.Entity<BovineHealthRecord>().HasKey(r => r.Id);

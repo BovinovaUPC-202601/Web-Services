@@ -5,5 +5,6 @@ public record UpdateCampaignCommand(
     string Name,
     string Description,
     DateOnly StartDate,
-    DateOnly EndDate
+    DateOnly EndDate,
+    List<int> StableIds
 );

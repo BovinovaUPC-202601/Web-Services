@@ -6,4 +6,6 @@ public record CampaignResource(
     string Description,
     DateOnly StartDate,
     DateOnly EndDate,
-    int UserId);
+    int UserId,
+    List<int> StableIds,
+    List<string> StableNames);

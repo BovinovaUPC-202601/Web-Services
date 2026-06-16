@@ -6,5 +6,6 @@ public record UpdateCampaignResource(
     [Required] string Name,
     [Required] string Description,
     DateOnly StartDate,
-    DateOnly EndDate
+    DateOnly EndDate,
+    [Required, MinLength(1)] List<int> StableIds
 );
