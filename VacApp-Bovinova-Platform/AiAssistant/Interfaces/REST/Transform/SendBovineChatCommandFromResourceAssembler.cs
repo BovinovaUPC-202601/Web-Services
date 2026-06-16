@@ -5,8 +5,8 @@ namespace VacApp_Bovinova_Platform.AIAssistant.Interfaces.REST.Transform;
 
 public static class SendBovineChatCommandFromResourceAssembler
 {
-    public static SendBovineChatCommand ToCommandFromResource(BovineChatMessageResource resource, int userId)
+    public static SendBovineChatCommand ToCommandFromResource(BovineChatMessageResource resource, int userId, int effectiveUserId)
     {
-        return new SendBovineChatCommand(userId, resource.BovineId, resource.Message);
+        return new SendBovineChatCommand(userId, effectiveUserId, resource.BovineId, resource.Message);
     }
 }

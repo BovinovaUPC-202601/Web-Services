@@ -54,6 +54,10 @@ using VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Services;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Infrastructure.Persistence.EFC.Repositories;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Application.ACL;
 using VacApp_Bovinova_Platform.SubscriptionManagement.Infrastructure.ACL;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Application.Outbound;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Infrastructure.Email;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Infrastructure.PaymentGateway;
+using VacApp_Bovinova_Platform.SubscriptionManagement.Infrastructure.Reminders;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Media.Local;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Repositories;
 using VacApp_Bovinova_Platform.AIAssistant.Domain.Services;
@@ -222,6 +226,23 @@ builder.Services.AddScoped<ISubscriptionContextFacade, SubscriptionContextFacade
 // Subscription Management BC
 builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
 builder.Services.AddScoped<IAdditionalCollarRequestRepository, AdditionalCollarRequestRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+
+// Mock payment gateway (no external provider).
+builder.Services.AddScoped<IPaymentGateway, MockPaymentGateway>();
+builder.Services.AddScoped<IPaymentCommandService, PaymentCommandService>();
+
+// Receipt email: Resend when an API key is configured, else a no-op logger so the
+// demo runs without external config. RESEND_TO_OVERRIDE pins the recipient in test mode.
+if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("RESEND_API_KEY")))
+    builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>();
+else
+    builder.Services.AddScoped<IEmailSender, LogEmailSender>();
+
+// Daily billing sweep: pre-renewal reminders (10/5 days) + suspend overdue-unpaid Plus.
+builder.Services.AddScoped<IPaymentReminderService, PaymentReminderService>();
+builder.Services.AddScoped<ISubscriptionSuspensionService, SubscriptionSuspensionService>();
+builder.Services.AddHostedService<PaymentReminderBackgroundService>();
 builder.Services.AddScoped<ISubscriptionCommandService, SubscriptionCommandService>();
 builder.Services.AddScoped<ISubscriptionQueryService, SubscriptionQueryService>();
 builder.Services.AddScoped<ICollarLifecycleFacade, CollarLifecycleFacade>();

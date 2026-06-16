@@ -59,11 +59,13 @@ public class AIAssistantRealAIUseCaseIntegrationTests(ITestOutputHelper output)
         // Act
         var firstResponse = await service.Handle(new SendGeneralChatCommand(
             userId,
+            userId,
             "What is the active campaign name? Answer briefly."));
         var persistedAfterFirstMessage = await sessionRepository.FindGeneralChatSessionByUserIdAsync(userId);
         var persistedMessageCountAfterFirstMessage = persistedAfterFirstMessage?.GetMessages().Count ?? 0;
 
         var secondResponse = await service.Handle(new SendGeneralChatCommand(
+            userId,
             userId,
             "What was my previous question about? Answer briefly."));
         var persistedAfterSecondMessage = await sessionRepository.FindGeneralChatSessionByUserIdAsync(userId);
@@ -146,6 +148,7 @@ public class AIAssistantRealAIUseCaseIntegrationTests(ITestOutputHelper output)
 
         // Act
         var response = await service.Handle(new SendBovineChatCommand(
+            userId,
             userId,
             bovineId,
             "What should I check for Lola today? Answer briefly."));

@@ -18,4 +18,11 @@ public class SubscriptionRepository(AppDbContext context)
         => await Context.Set<Subscription>()
             .Where(s => s.Status == SubscriptionStatus.Suspended || s.Status == SubscriptionStatus.Cancelled)
             .ToListAsync();
+
+    public async Task<IEnumerable<Subscription>> FindActivePlusWithRenewalAsync()
+        => await Context.Set<Subscription>()
+            .Where(s => s.Plan == PlanType.Plus
+                        && s.Status == SubscriptionStatus.Active
+                        && s.NextRenewal != null)
+            .ToListAsync();
 }

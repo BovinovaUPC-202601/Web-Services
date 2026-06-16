@@ -142,7 +142,7 @@ namespace VacApp_Bovinova_Platform.Migrations
                         .HasColumnType("longtext")
                         .HasColumnName("alert_type");
 
-                    b.Property<int>("BovineId")
+                    b.Property<int?>("BovineId")
                         .HasColumnType("int")
                         .HasColumnName("bovine_id");
 
@@ -746,6 +746,70 @@ namespace VacApp_Bovinova_Platform.Migrations
                     b.ToTable("additional-collar-requests");
                 });
 
+            modelBuilder.Entity("VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model.Aggregates.Payment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("Concept")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("concept");
+
+                    b.Property<DateTimeOffset?>("CreatedDate")
+                        .HasColumnType("datetime")
+                        .HasColumnName("created-at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("paid_at");
+
+                    b.Property<string>("ProviderRef")
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("provider_ref");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedDate")
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated-at");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("p-k_payments");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("i-x_payments_idempotency_key");
+
+                    b.HasIndex("ProviderRef")
+                        .HasDatabaseName("i-x_payments_provider_ref");
+
+                    b.ToTable("payments");
+                });
+
             modelBuilder.Entity("VacApp_Bovinova_Platform.SubscriptionManagement.Domain.Model.Aggregates.Subscription", b =>
                 {
                     b.Property<int>("Id")
@@ -765,6 +829,14 @@ namespace VacApp_Bovinova_Platform.Migrations
                         .IsRequired()
                         .HasColumnType("longtext")
                         .HasColumnName("plan");
+
+                    b.Property<DateTime?>("Reminder10SentForRenewal")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("reminder10-sent-for-renewal");
+
+                    b.Property<DateTime?>("Reminder5SentForRenewal")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("reminder5-sent-for-renewal");
 
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime(6)")

@@ -21,6 +21,13 @@ public class Subscription : IEntityWithCreatedUpdatedDate
     public DateTime?          NextRenewal { get; private set; }
     public DateTime?          SuspendedAt { get; private set; }
 
+    /// <summary>NextRenewal value the 10-day reminder was last sent for (null = never).
+    /// Compared against the current NextRenewal so each billing cycle reminds once.</summary>
+    public DateTime?          Reminder10SentForRenewal { get; private set; }
+
+    /// <summary>NextRenewal value the 5-day reminder was last sent for.</summary>
+    public DateTime?          Reminder5SentForRenewal  { get; private set; }
+
     protected Subscription() { }
 
     /// <summary>Creates the implicit Free subscription a user gets on sign-up.</summary>
@@ -41,6 +48,24 @@ public class Subscription : IEntityWithCreatedUpdatedDate
         StartDate   = DateTime.UtcNow;
         NextRenewal = DateTime.UtcNow.AddMonths(1);
         SuspendedAt = null;
+        // New cycle → reminders for the previous renewal no longer apply.
+        Reminder10SentForRenewal = null;
+        Reminder5SentForRenewal  = null;
+    }
+
+    /// <summary>
+    /// True if the given reminder stage still needs to be sent for the current
+    /// <see cref="NextRenewal"/> cycle (i.e. it hasn't already been stamped for it).
+    /// </summary>
+    public bool NeedsReminder(ReminderStage stage) => stage == ReminderStage.TenDays
+        ? Reminder10SentForRenewal != NextRenewal
+        : Reminder5SentForRenewal  != NextRenewal;
+
+    /// <summary>Records that a reminder stage was sent for the current cycle, so it is not resent.</summary>
+    public void MarkReminderSent(ReminderStage stage)
+    {
+        if (stage == ReminderStage.TenDays) Reminder10SentForRenewal = NextRenewal;
+        else                                Reminder5SentForRenewal  = NextRenewal;
     }
 
     /// <summary>Suspends a Plus subscription (e.g. non-payment); premium access is blocked.</summary>

@@ -26,6 +26,21 @@ public class AlertCommandService(
         return alert;
     }
 
+    public async Task<Alert?> Handle(RegisterCollarReturnAlertCommand command)
+    {
+        var alert = Alert.ForCollarReturn(command.UserId, command.CollarCount);
+        try
+        {
+            await alertRepository.AddAsync(alert);
+            await unitOfWork.CompleteAsync();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+        return alert;
+    }
+
     public async Task<Alert?> Handle(MarkAlertAsReadCommand command)
     {
         var alert = await alertRepository.FindByIdAsync(command.AlertId);
