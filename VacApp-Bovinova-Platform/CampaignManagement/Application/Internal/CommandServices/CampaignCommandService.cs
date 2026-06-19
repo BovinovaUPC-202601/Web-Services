@@ -20,14 +20,16 @@ public class CampaignCommandService(
         foreach (var stableId in command.StableIds)
         {
             var stable = await stableRepository.FindByIdAsync(stableId);
-            if (stable is null)
+            // Ownership check too (not just existence) so a campaign can't reference
+            // another ranch's stable. NotFound (not Forbidden) avoids leaking that the id exists.
+            if (stable is null || stable.UserId != command.UserId)
                 throw new NotFoundException($"Establo con ID '{stableId}' no encontrado.");
         }
 
         foreach (var bovineId in command.BovineIds)
         {
             var bovine = await bovineRepository.FindByIdAsync(bovineId);
-            if (bovine is null)
+            if (bovine is null || bovine.UserId != command.UserId)
                 throw new NotFoundException($"Bovino con ID '{bovineId}' no encontrado.");
         }
 
@@ -48,14 +50,16 @@ public class CampaignCommandService(
         foreach (var stableId in command.StableIds)
         {
             var stable = await stableRepository.FindByIdAsync(stableId);
-            if (stable is null)
+            // Ownership check too (not just existence) so a campaign can't reference
+            // another ranch's stable. NotFound (not Forbidden) avoids leaking that the id exists.
+            if (stable is null || stable.UserId != command.UserId)
                 throw new NotFoundException($"Establo con ID '{stableId}' no encontrado.");
         }
 
         foreach (var bovineId in command.BovineIds)
         {
             var bovine = await bovineRepository.FindByIdAsync(bovineId);
-            if (bovine is null)
+            if (bovine is null || bovine.UserId != command.UserId)
                 throw new NotFoundException($"Bovino con ID '{bovineId}' no encontrado.");
         }
 

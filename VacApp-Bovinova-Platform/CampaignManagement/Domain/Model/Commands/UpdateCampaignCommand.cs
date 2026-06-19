@@ -6,6 +6,7 @@ public record UpdateCampaignCommand(
     string Description,
     DateOnly StartDate,
     DateOnly EndDate,
+    int UserId,
     List<int> StableIds,
     List<int> BovineIds
 );

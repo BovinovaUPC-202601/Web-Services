@@ -11,7 +11,8 @@ namespace VacApp.Tests.UnitTests
             // Arrange
             var startDate = DateOnly.FromDateTime(DateTime.Now);
             var endDate = startDate.AddDays(10);
-            var command = new CreateCampaignCommand("Campaña 1", "Descripción", startDate, endDate, 1);
+            var command = new CreateCampaignCommand("Campaña 1", "Descripción", startDate, endDate, 1,
+                new List<int> { 1 }, new List<int>());
 
             // Act
             var campaign = new Campaign(command);

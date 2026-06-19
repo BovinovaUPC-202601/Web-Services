@@ -135,7 +135,7 @@ public class CampaignController(
         if (existing is null || existing.UserId != effectiveUserId)
             return NotFound(new { message = "Campaña no encontrada." });
 
-        var command = UpdateCampaignCommandFromResourceAssembler.ToCommandFromResource(id, resource);
+        var command = UpdateCampaignCommandFromResourceAssembler.ToCommandFromResource(id, resource, effectiveUserId);
         var campaign = await campaignCommandService.Handle(command);
 
         if (campaign is null)

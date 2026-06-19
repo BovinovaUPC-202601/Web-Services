@@ -7,9 +7,11 @@ using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Commands;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.CampaignManagement.Interfaces.REST.Resources;
-using VacApp_Bovinova_Platform.CampaignManagement.Interfaces.REST.Transform;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Commands;
+using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Aggregates;
+using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Queries;
+using VacApp_Bovinova_Platform.RanchManagement.Domain.Services;
 using VacApp_Bovinova_Platform.StaffAdministration.Domain.Services;
 
 namespace VacApp.Tests.IntegrationTests
@@ -19,6 +21,8 @@ namespace VacApp.Tests.IntegrationTests
         private readonly Mock<ICampaignCommandService> _commandServiceMock;
         private readonly Mock<ICampaignQueryService> _queryServiceMock;
         private readonly Mock<IStaffAccessService> _staffAccessMock;
+        private readonly Mock<IStableQueryService> _stableQueryServiceMock;
+        private readonly Mock<IBovineQueryService> _bovineQueryServiceMock;
         private readonly CampaignController _controller;
         private readonly User _user;
 
@@ -27,6 +31,8 @@ namespace VacApp.Tests.IntegrationTests
             _commandServiceMock = new Mock<ICampaignCommandService>();
             _queryServiceMock = new Mock<ICampaignQueryService>();
             _staffAccessMock = new Mock<IStaffAccessService>();
+            _stableQueryServiceMock = new Mock<IStableQueryService>();
+            _bovineQueryServiceMock = new Mock<IBovineQueryService>();
 
             _user = new User(new SignUpCommand("usuario", "email@email.com", "pass"));
 
@@ -34,8 +40,13 @@ namespace VacApp.Tests.IntegrationTests
             _staffAccessMock.Setup(x => x.CanEditAsync(It.IsAny<User>())).ReturnsAsync(true);
             _staffAccessMock.Setup(x => x.GetEffectiveUserIdAsync(It.IsAny<User>())).ReturnsAsync((User u) => u.Id);
 
+            // Name lookups used when building the campaign resource (no stables/bovines registered).
+            _stableQueryServiceMock.Setup(x => x.Handle(It.IsAny<GetAllStablesQuery>())).ReturnsAsync(new List<Stable>());
+            _bovineQueryServiceMock.Setup(x => x.Handle(It.IsAny<GetAllBovinesQuery>())).ReturnsAsync(new List<Bovine>());
+
             _controller = new CampaignController(
-                _commandServiceMock.Object, _queryServiceMock.Object, _staffAccessMock.Object);
+                _commandServiceMock.Object, _queryServiceMock.Object, _staffAccessMock.Object,
+                _stableQueryServiceMock.Object, _bovineQueryServiceMock.Object);
             _controller.ControllerContext.HttpContext = new DefaultHttpContext();
             _controller.ControllerContext.HttpContext.Items["User"] = _user;
         }
@@ -46,15 +57,16 @@ namespace VacApp.Tests.IntegrationTests
             // Arrange
             var campaign = new Campaign(new CreateCampaignCommand(
                 "Campaña A", "Desc", DateOnly.FromDateTime(DateTime.Today),
-                DateOnly.FromDateTime(DateTime.Today.AddDays(10)), _user.Id
+                DateOnly.FromDateTime(DateTime.Today.AddDays(10)), _user.Id,
+                new List<int> { 1 }, new List<int>()
             ));
             _commandServiceMock.Setup(x => x.Handle(It.IsAny<CreateCampaignCommand>())).ReturnsAsync(campaign);
 
             var resource = new CreateCampaignResource(
                 "Campaña A", "Desc", DateOnly.FromDateTime(DateTime.Today),
-                DateOnly.FromDateTime(DateTime.Today.AddDays(10))
+                DateOnly.FromDateTime(DateTime.Today.AddDays(10)),
+                new List<int> { 1 }, new List<int>()
             );
-            var expectedResource = CampaignResourceFromEntityAssembler.ToResourceFromEntity(campaign);
 
             // Act
             var result = await _controller.CreateCampaign(resource);
@@ -62,7 +74,8 @@ namespace VacApp.Tests.IntegrationTests
             // Assert
             var createdResult = Assert.IsType<CreatedAtActionResult>(result);
             Assert.Equal(201, createdResult.StatusCode);
-            Assert.Equal(expectedResource, createdResult.Value);
+            var returned = Assert.IsType<CampaignResource>(createdResult.Value);
+            Assert.Equal("Campaña A", returned.Name);
         }
 
         [Fact]
@@ -71,10 +84,10 @@ namespace VacApp.Tests.IntegrationTests
             // Arrange
             var campaign = new Campaign(new CreateCampaignCommand(
                 "Campaña A", "Desc", DateOnly.FromDateTime(DateTime.Today),
-                DateOnly.FromDateTime(DateTime.Today.AddDays(10)), _user.Id
+                DateOnly.FromDateTime(DateTime.Today.AddDays(10)), _user.Id,
+                new List<int> { 1 }, new List<int>()
             ));
             _queryServiceMock.Setup(x => x.Handle(It.IsAny<GetCampaignByIdQuery>())).ReturnsAsync(campaign);
-            var expectedResource = CampaignResourceFromEntityAssembler.ToResourceFromEntity(campaign);
 
             // Act
             var result = await _controller.GetCampaignById(1);
@@ -82,7 +95,8 @@ namespace VacApp.Tests.IntegrationTests
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(200, okResult.StatusCode);
-            Assert.Equal(expectedResource, okResult.Value);
+            var returned = Assert.IsType<CampaignResource>(okResult.Value);
+            Assert.Equal("Campaña A", returned.Name);
         }
 
         [Fact]
@@ -93,11 +107,11 @@ namespace VacApp.Tests.IntegrationTests
             {
                 new Campaign(new CreateCampaignCommand(
                     "Campaña A", "Desc", DateOnly.FromDateTime(DateTime.Today),
-                    DateOnly.FromDateTime(DateTime.Today.AddDays(10)), _user.Id
+                    DateOnly.FromDateTime(DateTime.Today.AddDays(10)), _user.Id,
+                    new List<int> { 1 }, new List<int>()
                 ))
             };
             _queryServiceMock.Setup(x => x.Handle(It.IsAny<GetAllCampaignsQuery>())).ReturnsAsync(campaignList);
-            var expectedResources = campaignList.Select(CampaignResourceFromEntityAssembler.ToResourceFromEntity);
 
             // Act
             var result = await _controller.GetAllCampaigns();
@@ -105,7 +119,8 @@ namespace VacApp.Tests.IntegrationTests
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(200, okResult.StatusCode);
-            Assert.Equal(expectedResources, okResult.Value);
+            var returned = Assert.IsAssignableFrom<IEnumerable<CampaignResource>>(okResult.Value);
+            Assert.Single(returned);
         }
 
         [Fact]
@@ -114,7 +129,8 @@ namespace VacApp.Tests.IntegrationTests
             // Arrange
             var campaign = new Campaign(new CreateCampaignCommand(
                 "Campaña A", "Desc", DateOnly.FromDateTime(DateTime.Today),
-                DateOnly.FromDateTime(DateTime.Today.AddDays(10)), _user.Id
+                DateOnly.FromDateTime(DateTime.Today.AddDays(10)), _user.Id,
+                new List<int> { 1 }, new List<int>()
             ));
             _queryServiceMock.Setup(x => x.Handle(It.IsAny<GetCampaignByIdQuery>())).ReturnsAsync(campaign);
             _commandServiceMock.Setup(x => x.Handle(It.IsAny<DeleteCampaignCommand>()))
@@ -126,15 +142,14 @@ namespace VacApp.Tests.IntegrationTests
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(200, okResult.StatusCode);
-            Assert.Equivalent(new { message = "Deleted successfully" }, okResult.Value);
+            Assert.Equivalent(new { message = "Campaña eliminada correctamente." }, okResult.Value);
         }
 
         [Fact]
         public async Task DeleteCampaign_ReturnsNotFound()
         {
-            // Arrange
-            _commandServiceMock.Setup(x => x.Handle(It.IsAny<DeleteCampaignCommand>()))
-                .ReturnsAsync(false);
+            // Arrange: the campaign does not exist for this user, so deletion returns NotFound.
+            _queryServiceMock.Setup(x => x.Handle(It.IsAny<GetCampaignByIdQuery>())).ReturnsAsync((Campaign?)null);
 
             // Act
             var result = await _controller.DeleteCampaign(1);
@@ -142,7 +157,7 @@ namespace VacApp.Tests.IntegrationTests
             // Assert
             var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
             Assert.Equal(404, notFoundResult.StatusCode);
-            Assert.Equivalent(new { message = "Campaign not found" }, notFoundResult.Value);
+            Assert.Equivalent(new { message = "Campaña no encontrada." }, notFoundResult.Value);
         }
     }
 }

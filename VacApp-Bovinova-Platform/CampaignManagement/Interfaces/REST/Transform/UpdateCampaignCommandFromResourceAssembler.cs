@@ -5,7 +5,7 @@ namespace VacApp_Bovinova_Platform.CampaignManagement.Interfaces.REST.Transform;
 
 public static class UpdateCampaignCommandFromResourceAssembler
 {
-    public static UpdateCampaignCommand ToCommandFromResource(int id, UpdateCampaignResource resource)
+    public static UpdateCampaignCommand ToCommandFromResource(int id, UpdateCampaignResource resource, int effectiveUserId)
     {
         return new UpdateCampaignCommand(
             id,
@@ -13,6 +13,7 @@ public static class UpdateCampaignCommandFromResourceAssembler
             resource.Description,
             resource.StartDate,
             resource.EndDate,
+            effectiveUserId,
             resource.StableIds ?? [],
             resource.BovineIds ?? []
         );
