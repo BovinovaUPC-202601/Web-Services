@@ -36,8 +36,14 @@ public class RanchContextFacade(
         context.AppendLine($"Registered campaigns: {campaigns.Count}");
         foreach (var campaign in campaigns)
         {
+            var stablesText = campaign.CampaignStables.Count > 0
+                ? string.Join(", ", campaign.CampaignStables.Select(cs => $"#{cs.StableId}"))
+                : "none";
+            var bovinesText = campaign.CampaignBovines.Count > 0
+                ? string.Join(", ", campaign.CampaignBovines.Select(cb => $"#{cb.BovineId}"))
+                : "none";
             context.AppendLine(
-                $"- Campaign #{campaign.Id}: {campaign.Name}, {campaign.Description}, from {campaign.StartDate:yyyy-MM-dd} to {campaign.EndDate:yyyy-MM-dd}");
+                $"- Campaign #{campaign.Id}: {campaign.Name}, {campaign.Description}, from {campaign.StartDate:yyyy-MM-dd} to {campaign.EndDate:yyyy-MM-dd}; stables: {stablesText}; bovines: {bovinesText}");
         }
 
         return context.ToString();
@@ -62,6 +68,29 @@ public class RanchContextFacade(
             $"Normal temperature range for this bovine: {bovine.MinTemperature:0.0}-{bovine.MaxTemperature:0.0} C");
         context.AppendLine(
             $"Normal heart rate range for this bovine: {bovine.MinHeartRate}-{bovine.MaxHeartRate} bpm");
+
+        // Campaigns covering this bovine: directly associated, or via its stable.
+        var campaigns = (await campaignQueryService.Handle(new GetAllCampaignsQuery(userId))).ToList();
+        var bovineCampaigns = campaigns
+            .Where(c => c.CampaignBovines.Any(cb => cb.BovineId == bovine.Id)
+                        || c.CampaignStables.Any(cs => cs.StableId == bovine.StableId))
+            .ToList();
+
+        if (bovineCampaigns.Count > 0)
+        {
+            context.AppendLine($"Campaigns covering this bovine: {bovineCampaigns.Count}");
+            foreach (var campaign in bovineCampaigns)
+            {
+                var via = campaign.CampaignBovines.Any(cb => cb.BovineId == bovine.Id) ? "directly" : "via its stable";
+                context.AppendLine(
+                    $"- Campaign #{campaign.Id}: {campaign.Name}, from {campaign.StartDate:yyyy-MM-dd} to {campaign.EndDate:yyyy-MM-dd} ({via})");
+            }
+        }
+        else
+        {
+            context.AppendLine("This bovine is not part of any campaign.");
+        }
+
         return context.ToString();
     }
 }

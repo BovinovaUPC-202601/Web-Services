@@ -13,6 +13,7 @@ public class CampaignRepository(AppDbContext context) : BaseRepository<Campaign>
     {
         return await Context.Set<Campaign>()
             .Include(c => c.CampaignStables)
+            .Include(c => c.CampaignBovines)
             .FirstOrDefaultAsync(c => c.Name == name);
     }
 
@@ -21,6 +22,7 @@ public class CampaignRepository(AppDbContext context) : BaseRepository<Campaign>
         return await Context.Set<Campaign>()
             .Where(f => f.UserId == userId)
             .Include(c => c.CampaignStables)
+            .Include(c => c.CampaignBovines)
             .ToListAsync();
     }
 
@@ -28,6 +30,7 @@ public class CampaignRepository(AppDbContext context) : BaseRepository<Campaign>
     {
         return await Context.Set<Campaign>()
             .Include(c => c.CampaignStables)
+            .Include(c => c.CampaignBovines)
             .FirstOrDefaultAsync(c => c.Id == id);
     }
 }
