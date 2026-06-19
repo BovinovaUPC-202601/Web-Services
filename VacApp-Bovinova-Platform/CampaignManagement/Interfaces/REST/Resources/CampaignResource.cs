@@ -8,4 +8,6 @@ public record CampaignResource(
     DateOnly EndDate,
     int UserId,
     List<int> StableIds,
-    List<string> StableNames);
+    List<string> StableNames,
+    List<int> BovineIds,
+    List<string> BovineNames);

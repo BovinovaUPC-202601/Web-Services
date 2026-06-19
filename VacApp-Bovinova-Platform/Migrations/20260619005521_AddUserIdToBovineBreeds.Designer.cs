@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configuration;
 
@@ -10,9 +11,11 @@ using VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configurati
 namespace VacApp_Bovinova_Platform.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619005521_AddUserIdToBovineBreeds")]
+    partial class AddUserIdToBovineBreeds
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -209,22 +212,6 @@ namespace VacApp_Bovinova_Platform.Migrations
                         .HasName("p-k_campaigns");
 
                     b.ToTable("campaigns");
-                });
-
-            modelBuilder.Entity("VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Entities.CampaignBovine", b =>
-                {
-                    b.Property<int>("CampaignId")
-                        .HasColumnType("int")
-                        .HasColumnName("campaign_id");
-
-                    b.Property<int>("BovineId")
-                        .HasColumnType("int")
-                        .HasColumnName("bovine_id");
-
-                    b.HasKey("CampaignId", "BovineId")
-                        .HasName("p-k_campaign-bovines");
-
-                    b.ToTable("campaign-bovines");
                 });
 
             modelBuilder.Entity("VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Entities.CampaignStable", b =>
@@ -909,16 +896,6 @@ namespace VacApp_Bovinova_Platform.Migrations
                     b.ToTable("subscriptions");
                 });
 
-            modelBuilder.Entity("VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Entities.CampaignBovine", b =>
-                {
-                    b.HasOne("VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates.Campaign", null)
-                        .WithMany("CampaignBovines")
-                        .HasForeignKey("CampaignId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("f-k_campaign-bovines_campaigns_campaign_id");
-                });
-
             modelBuilder.Entity("VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Entities.CampaignStable", b =>
                 {
                     b.HasOne("VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates.Campaign", null)
@@ -1001,8 +978,6 @@ namespace VacApp_Bovinova_Platform.Migrations
 
             modelBuilder.Entity("VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Aggregates.Campaign", b =>
                 {
-                    b.Navigation("CampaignBovines");
-
                     b.Navigation("CampaignStables");
                 });
 #pragma warning restore 612, 618

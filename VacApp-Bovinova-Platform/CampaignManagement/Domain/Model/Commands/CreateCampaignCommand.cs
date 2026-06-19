@@ -6,5 +6,6 @@ public record CreateCampaignCommand(
     DateOnly StartDate,
     DateOnly EndDate,
     int UserId,
-    List<int> StableIds
+    List<int> StableIds,
+    List<int> BovineIds
     );

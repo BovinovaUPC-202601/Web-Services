@@ -1,6 +1,7 @@
 using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using VacApp_Bovinova_Platform.IAM.Domain.Model;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Attributes;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Model.Commands;
@@ -19,11 +20,12 @@ namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST;
 [Tags("Bovines")]
 public class BovineController(IBovineCommandService commandService,
     IBovineQueryService queryService,
+    IBovineBreedCommandService breedCommandService,
     IStaffAccessService staffAccessService) : ControllerBase
 {
     private ObjectResult ForbiddenEdit() =>
         StatusCode(StatusCodes.Status403Forbidden,
-            new { message = "Read-only staff cannot create, edit or delete." });
+            new { message = "El personal de solo lectura no puede crear, editar ni eliminar." });
 
     [HttpPost]
     [SwaggerOperation(
@@ -152,17 +154,108 @@ public class BovineController(IBovineCommandService commandService,
         return Ok(new { message = "Deleted successfully" });
     }
 
-    [AllowAnonymous]
     [HttpGet("breeds")]
     [SwaggerOperation(
         Summary = "Get all bovine breeds",
-        Description = "Get all bovine breeds",
+        Description = "Returns global breeds plus breeds belonging to the authenticated user's organization.",
         OperationId = "GetAllBovineBreeds")]
-    [SwaggerResponse(StatusCodes.Status200OK, "The list of bovine breeds were found", typeof(IEnumerable<BovineBreedResource>))]
+    [SwaggerResponse(StatusCodes.Status200OK, "Lista de razas encontrada", typeof(IEnumerable<BovineBreedResource>))]
     public async Task<IActionResult> GetAllBovineBreeds()
     {
-        var breeds = await queryService.Handle(new GetAllBovineBreedsQuery());
+        var user = HttpContext.Items["User"] as User;
+        var userId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var breeds = await queryService.Handle(new GetAllBovineBreedsQuery(userId));
         var breedResources = breeds.Select(BovineBreedResourceFromEntityAssembler.ToResourceFromEntity);
         return Ok(breedResources);
+    }
+
+    /// <summary>Creates a breed. Admin → global. Rancher/Staff → belongs to the organization.</summary>
+    [HttpPost("breeds")]
+    [SwaggerOperation(
+        Summary = "Create a bovine breed",
+        Description = "Creates a new breed. Admin creates a global breed (visible to all). Rancher or Editor+ staff creates a breed scoped to their organization.",
+        OperationId = "CreateBovineBreed")]
+    [SwaggerResponse(StatusCodes.Status201Created, "Raza creada", typeof(BovineBreedResource))]
+    [SwaggerResponse(StatusCodes.Status400BadRequest, "Solicitud inválida")]
+    [SwaggerResponse(StatusCodes.Status403Forbidden, "Permisos insuficientes")]
+    public async Task<IActionResult> CreateBovineBreed([FromBody] CreateBovineBreedResource resource)
+    {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("Usuario no encontrado en el contexto.");
+
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+
+        int? effectiveUserId = user.Role == UserRole.Admin ? null : await staffAccessService.GetEffectiveUserIdAsync(user);
+        var command = CreateBovineBreedCommandFromResourceAssembler.ToCommandFromResource(resource, effectiveUserId);
+        var result = await breedCommandService.Handle(command);
+        if (result is null) return BadRequest();
+        var allBreeds = await queryService.Handle(new GetAllBovineBreedsQuery(effectiveUserId));
+        var created = allBreeds.FirstOrDefault(b => b.Name == result.Name && b.UserId == result.UserId);
+        return CreatedAtAction(nameof(GetAllBovineBreeds), null,
+            BovineBreedResourceFromEntityAssembler.ToResourceFromEntity(created ?? result));
+    }
+
+    /// <summary>Updates a breed. Only the owning organization (Editor+) or an Admin can edit global breeds.</summary>
+    [HttpPut("breeds/{id}")]
+    [SwaggerOperation(
+        Summary = "Actualizar una raza",
+        Description = "Actualiza nombre y umbrales de una raza. Solo el personal Editor+ de la organización o un Admin pueden editar.",
+        OperationId = "UpdateBovineBreed")]
+    [SwaggerResponse(StatusCodes.Status200OK, "Raza actualizada", typeof(BovineBreedResource))]
+    [SwaggerResponse(StatusCodes.Status403Forbidden, "Permisos insuficientes")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "Raza no encontrada")]
+    public async Task<IActionResult> UpdateBovineBreed(int id, [FromBody] UpdateBovineBreedResource resource)
+    {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("Usuario no encontrado en el contexto.");
+
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var breeds = await queryService.Handle(new GetAllBovineBreedsQuery(effectiveUserId));
+        var breed = breeds.FirstOrDefault(b => b.Id == id);
+        if (breed is null) return NotFound(new { message = "Raza no encontrada." });
+
+        if (!breed.UserId.HasValue && user.Role != UserRole.Admin)
+            return ForbiddenEdit();
+
+        var command = UpdateBovineBreedCommandFromResourceAssembler.ToCommandFromResource(id, resource);
+        var result = await breedCommandService.Handle(command);
+        if (result is null) return BadRequest();
+        return Ok(BovineBreedResourceFromEntityAssembler.ToResourceFromEntity(result));
+    }
+
+    /// <summary>Deletes a breed. Only the owning organization (Editor+) or an Admin can delete global breeds.</summary>
+    [HttpDelete("breeds/{id}")]
+    [SwaggerOperation(
+        Summary = "Eliminar una raza",
+        Description = "Elimina una raza. Solo el personal Editor+ de la organización o un Admin pueden eliminar.",
+        OperationId = "DeleteBovineBreed")]
+    [SwaggerResponse(StatusCodes.Status200OK, "Raza eliminada")]
+    [SwaggerResponse(StatusCodes.Status403Forbidden, "Permisos insuficientes")]
+    [SwaggerResponse(StatusCodes.Status404NotFound, "Raza no encontrada")]
+    public async Task<IActionResult> DeleteBovineBreed(int id)
+    {
+        var user = HttpContext.Items["User"] as User;
+        if (user is null)
+            return Unauthorized("Usuario no encontrado en el contexto.");
+
+        if (!await staffAccessService.CanEditAsync(user)) return ForbiddenEdit();
+        var effectiveUserId = await staffAccessService.GetEffectiveUserIdAsync(user);
+
+        var breeds = await queryService.Handle(new GetAllBovineBreedsQuery(effectiveUserId));
+        var breed = breeds.FirstOrDefault(b => b.Id == id);
+        if (breed is null) return NotFound(new { message = "Raza no encontrada." });
+
+        if (!breed.UserId.HasValue && user.Role != UserRole.Admin)
+            return ForbiddenEdit();
+
+        var command = new DeleteBovineBreedCommand(id);
+        var result = await breedCommandService.Handle(command);
+        if (result is null) return NotFound(new { message = "Raza no encontrada." });
+        return Ok(new { message = "Raza eliminada correctamente." });
     }
 }

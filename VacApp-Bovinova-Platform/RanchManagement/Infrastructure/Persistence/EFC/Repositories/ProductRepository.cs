@@ -16,4 +16,9 @@ public class ProductRepository(AppDbContext ctx) : BaseRepository<Product>(ctx),
 
     public async Task<IEnumerable<Product>> GetAllAsync()
         => await ctx.Products.ToListAsync();
+
+    public async Task<IEnumerable<Product>> FindByExpirationDateWindowAsync(DateOnly from, DateOnly to)
+        => await ctx.Products
+            .Where(p => p.ExpirationDate >= from && p.ExpirationDate <= to && p.ExpiryNotificationSentAt == null)
+            .ToListAsync();
 }

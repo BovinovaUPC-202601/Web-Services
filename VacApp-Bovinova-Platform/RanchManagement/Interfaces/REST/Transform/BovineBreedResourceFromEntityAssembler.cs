@@ -13,7 +13,8 @@ namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Transform
                 breed.MinTemperature,
                 breed.MaxTemperature,
                 breed.MinHeartRate,
-                breed.MaxHeartRate
+                breed.MaxHeartRate,
+                breed.UserId
             );
         }
     }

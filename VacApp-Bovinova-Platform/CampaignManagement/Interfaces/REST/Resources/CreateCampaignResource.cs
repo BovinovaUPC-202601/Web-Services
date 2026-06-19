@@ -7,5 +7,6 @@ public record CreateCampaignResource(
     [Required] string Description,
     DateOnly StartDate,
     DateOnly EndDate,
-    [Required, MinLength(1)] List<int> StableIds
+    List<int>? StableIds,
+    List<int>? BovineIds
     );

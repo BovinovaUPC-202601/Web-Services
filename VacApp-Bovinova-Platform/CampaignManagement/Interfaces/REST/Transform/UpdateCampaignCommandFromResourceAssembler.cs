@@ -13,7 +13,8 @@ public static class UpdateCampaignCommandFromResourceAssembler
             resource.Description,
             resource.StartDate,
             resource.EndDate,
-            resource.StableIds
+            resource.StableIds ?? [],
+            resource.BovineIds ?? []
         );
     }
 }
