@@ -14,6 +14,7 @@ public class Campaign
     public int UserId { get; private set; }
 
     public ICollection<CampaignStable> CampaignStables { get; private set; } = new List<CampaignStable>();
+    public ICollection<CampaignBovine> CampaignBovines { get; private set; } = new List<CampaignBovine>();
 
     protected Campaign()
     {
@@ -27,6 +28,12 @@ public class Campaign
     {
         if (startDate > endDate)
             throw new ValidationException("La fecha de inicio no puede ser posterior a la fecha de fin.");
+    }
+
+    private static void ValidateTargets(List<int> stableIds, List<int> bovineIds)
+    {
+        if (stableIds.Count == 0 && bovineIds.Count == 0)
+            throw new ValidationException("Debe seleccionar al menos un establo o un bovino.");
     }
 
     public Campaign(string name, string description, DateOnly startDate, DateOnly endDate, int userId)
@@ -43,6 +50,7 @@ public class Campaign
     public Campaign(CreateCampaignCommand command)
     {
         ValidateDates(command.StartDate, command.EndDate);
+        ValidateTargets(command.StableIds, command.BovineIds);
 
         Name = command.Name;
         Description = command.Description;
@@ -51,11 +59,14 @@ public class Campaign
         UserId = command.UserId;
         foreach (var stableId in command.StableIds)
             CampaignStables.Add(new CampaignStable(stableId));
+        foreach (var bovineId in command.BovineIds)
+            CampaignBovines.Add(new CampaignBovine(bovineId));
     }
 
     public void Update(UpdateCampaignCommand command)
     {
         ValidateDates(command.StartDate, command.EndDate);
+        ValidateTargets(command.StableIds, command.BovineIds);
 
         Name = command.Name;
         Description = command.Description;
@@ -64,5 +75,8 @@ public class Campaign
         CampaignStables.Clear();
         foreach (var stableId in command.StableIds)
             CampaignStables.Add(new CampaignStable(stableId));
+        CampaignBovines.Clear();
+        foreach (var bovineId in command.BovineIds)
+            CampaignBovines.Add(new CampaignBovine(bovineId));
     }
 }

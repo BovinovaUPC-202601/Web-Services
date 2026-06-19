@@ -11,7 +11,8 @@ namespace VacApp_Bovinova_Platform.CampaignManagement.Application.Internal.Comma
 public class CampaignCommandService(
     ICampaignRepository campaignRepository,
     IUnitOfWork unitOfWork,
-    IStableRepository stableRepository)
+    IStableRepository stableRepository,
+    IBovineRepository bovineRepository)
 : ICampaignCommandService
 {
     public async Task<Campaign?> Handle(CreateCampaignCommand command)
@@ -21,6 +22,13 @@ public class CampaignCommandService(
             var stable = await stableRepository.FindByIdAsync(stableId);
             if (stable is null)
                 throw new NotFoundException($"Establo con ID '{stableId}' no encontrado.");
+        }
+
+        foreach (var bovineId in command.BovineIds)
+        {
+            var bovine = await bovineRepository.FindByIdAsync(bovineId);
+            if (bovine is null)
+                throw new NotFoundException($"Bovino con ID '{bovineId}' no encontrado.");
         }
 
         var campaign = new Campaign(command);
@@ -42,6 +50,13 @@ public class CampaignCommandService(
             var stable = await stableRepository.FindByIdAsync(stableId);
             if (stable is null)
                 throw new NotFoundException($"Establo con ID '{stableId}' no encontrado.");
+        }
+
+        foreach (var bovineId in command.BovineIds)
+        {
+            var bovine = await bovineRepository.FindByIdAsync(bovineId);
+            if (bovine is null)
+                throw new NotFoundException($"Bovino con ID '{bovineId}' no encontrado.");
         }
 
         campaign.Update(command);

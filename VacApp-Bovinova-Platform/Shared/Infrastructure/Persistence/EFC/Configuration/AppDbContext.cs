@@ -35,6 +35,7 @@ public class AppDbContext : DbContext
     public DbSet<BovineAnalysis> BovineAnalyses { get; set; }
     public DbSet<BovineBreed> BovineBreeds { get; set; }
     public DbSet<CampaignStable> CampaignStables { get; set; }
+    public DbSet<CampaignBovine> CampaignBovines { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -166,6 +167,15 @@ public class AppDbContext : DbContext
         builder.Entity<CampaignStable>().HasKey(cs => new { cs.CampaignId, cs.StableId });
         builder.Entity<CampaignStable>().Property(cs => cs.CampaignId).IsRequired().HasColumnName("campaign_id");
         builder.Entity<CampaignStable>().Property(cs => cs.StableId).IsRequired().HasColumnName("stable_id");
+
+        builder.Entity<Campaign>().HasMany(c => c.CampaignBovines)
+            .WithOne()
+            .HasForeignKey(cb => cb.CampaignId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<CampaignBovine>().HasKey(cb => new { cb.CampaignId, cb.BovineId });
+        builder.Entity<CampaignBovine>().Property(cb => cb.CampaignId).IsRequired().HasColumnName("campaign_id");
+        builder.Entity<CampaignBovine>().Property(cb => cb.BovineId).IsRequired().HasColumnName("bovine_id");
 
         /* IoT Monitoring */
         builder.Entity<BovineHealthRecord>().HasKey(r => r.Id);
