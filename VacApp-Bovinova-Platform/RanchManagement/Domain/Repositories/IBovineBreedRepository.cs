@@ -5,6 +5,7 @@ namespace VacApp_Bovinova_Platform.RanchManagement.Domain.Repositories
 {
     public interface IBovineBreedRepository : IBaseRepository<BovineBreed>
     {
-
-    }
+    Task<IEnumerable<BovineBreed>> FindByUserIdOrGlobalAsync(int userId);
+    Task<IEnumerable<BovineBreed>> FindGlobalAsync();
+}
 }

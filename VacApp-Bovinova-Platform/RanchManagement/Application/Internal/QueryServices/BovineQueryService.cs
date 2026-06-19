@@ -31,6 +31,8 @@ public class BovineQueryService(IBovineRepository bovineRepository, IBovineBreed
 
     public async Task<IEnumerable<BovineBreed>> Handle(GetAllBovineBreedsQuery query)
     {
-        return await bovineBreedRepository.ListAsync();
+        if (query.UserId.HasValue)
+            return await bovineBreedRepository.FindByUserIdOrGlobalAsync(query.UserId.Value);
+        return await bovineBreedRepository.FindGlobalAsync();
     }
 }

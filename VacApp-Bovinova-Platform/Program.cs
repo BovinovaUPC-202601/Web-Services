@@ -187,6 +187,7 @@ builder.Services.Configure<TokenSettings>(builder.Configuration.GetSection("Toke
 
 //Ranch Management BC
 builder.Services.AddScoped<IBovineBreedRepository, BovineBreedRepository>();
+builder.Services.AddScoped<IBovineBreedCommandService, BovineBreedCommandService>();
 
 builder.Services.AddScoped<IBovineRepository, BovineRepository>();
 builder.Services.AddScoped<IBovineQueryService, BovineQueryService>();
