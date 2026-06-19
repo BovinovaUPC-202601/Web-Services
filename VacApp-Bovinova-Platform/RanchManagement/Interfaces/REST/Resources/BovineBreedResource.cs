@@ -6,7 +6,8 @@ namespace VacApp_Bovinova_Platform.RanchManagement.Interfaces.REST.Resources
         double MinTemperature,
         double MaxTemperature,
         int MinHeartRate,
-        int MaxHeartRate
+        int MaxHeartRate,
+        int? UserId
     )
     { }
 }

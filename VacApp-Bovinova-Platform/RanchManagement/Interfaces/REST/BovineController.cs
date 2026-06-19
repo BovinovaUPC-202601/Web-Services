@@ -154,19 +154,16 @@ public class BovineController(IBovineCommandService commandService,
         return Ok(new { message = "Deleted successfully" });
     }
 
-    [AllowAnonymous]
     [HttpGet("breeds")]
     [SwaggerOperation(
         Summary = "Get all bovine breeds",
-        Description = "Returns global breeds plus breeds belonging to the authenticated user's organization. Anonymous callers see only global breeds.",
+        Description = "Returns global breeds plus breeds belonging to the authenticated user's organization.",
         OperationId = "GetAllBovineBreeds")]
     [SwaggerResponse(StatusCodes.Status200OK, "Lista de razas encontrada", typeof(IEnumerable<BovineBreedResource>))]
     public async Task<IActionResult> GetAllBovineBreeds()
     {
         var user = HttpContext.Items["User"] as User;
-        int? userId = null;
-        if (user is not null)
-            userId = await staffAccessService.GetEffectiveUserIdAsync(user);
+        var userId = await staffAccessService.GetEffectiveUserIdAsync(user);
 
         var breeds = await queryService.Handle(new GetAllBovineBreedsQuery(userId));
         var breedResources = breeds.Select(BovineBreedResourceFromEntityAssembler.ToResourceFromEntity);
