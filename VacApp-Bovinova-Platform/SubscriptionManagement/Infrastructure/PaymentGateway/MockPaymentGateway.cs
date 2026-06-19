@@ -13,10 +13,8 @@ public class MockPaymentGateway : IPaymentGateway
 
     public MockPaymentGateway()
     {
-        // Default to the deployed frontend so checkout works in production without
-        // extra config. For local dev, set FRONT_BASE_URL=http://localhost:5173 in .env.
         _frontBaseUrl = Environment.GetEnvironmentVariable("FRONT_BASE_URL")
-                        ?? "https://vacapupc.vercel.app";
+                        ?? "http://localhost:5173";
     }
 
     public Task<CheckoutSession> CreateSubscriptionCheckoutAsync(CheckoutRequest request)
