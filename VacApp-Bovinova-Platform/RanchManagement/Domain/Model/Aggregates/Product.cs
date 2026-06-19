@@ -28,8 +28,14 @@ public class Product
 
     public DateOnly? ExpirationDate { get; private set; }
     public string? Unit { get; private set; }
+    public DateTime? ExpiryNotificationSentAt { get; set; }
 
     private Product() { Name = string.Empty; }
+
+    public void MarkExpiryNotificationSent()
+    {
+        ExpiryNotificationSentAt = DateTime.UtcNow;
+    }
 
     public Product(string name, int categoryId, int quantity, int userId, DateOnly? expirationDate = null, string? unit = null)
     {

@@ -4,6 +4,7 @@ using VacApp_Bovinova_Platform.RanchManagement.Application.Internal.QueryService
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Repositories;
 using VacApp_Bovinova_Platform.RanchManagement.Domain.Services;
 using VacApp_Bovinova_Platform.RanchManagement.Infrastructure.Persistence.EFC.Repositories;
+using VacApp_Bovinova_Platform.RanchManagement.Infrastructure.Reminders;
 using VacApp_Bovinova_Platform.Shared.Domain.Repositories;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Interfaces.ASAP.Configuration;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Persistence.EFC.Configuration;
@@ -202,6 +203,10 @@ builder.Services.AddScoped<ICategoryCommandService, CategoryCommandService>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductQueryService, ProductQueryService>();
 builder.Services.AddScoped<IProductCommandService, ProductCommandService>();
+
+// Product expiry notification sweep (daily)
+builder.Services.AddScoped<IProductExpiryNotificationService, ProductExpiryNotificationService>();
+builder.Services.AddHostedService<ProductExpiryBackgroundService>();
 
 //Staff Administration BC
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();

@@ -7,4 +7,5 @@ public interface IProductRepository : IBaseRepository<Product>
 {
     Task<IEnumerable<Product>> FindByUserIdAsync(int userId);
     Task<IEnumerable<Product>> FindByCategoryIdAsync(int categoryId);
+    Task<IEnumerable<Product>> FindByExpirationDateWindowAsync(DateOnly from, DateOnly to);
 }
