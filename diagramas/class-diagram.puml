@@ -1,0 +1,396 @@
+@startuml VacApp-Backend-ClassDiagram
+title VacApp — Diagrama de Clases del Backend (Dominio DDD por Bounded Context)
+
+skinparam linetype ortho
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide circle
+
+' =====================================================================
+' IAM — Identity & Access Management
+' =====================================================================
+package "IAM" {
+  class User {
+    +Id : int
+    +Username : string
+    +Password : string
+    +Email : string
+    +SubscriptionPlan : string
+    +Role : UserRole
+    +CreatedDate : DateTimeOffset?
+    +UpdatedDate : DateTimeOffset?
+    --
+    +Update(cmd : UpdateUserCommand)
+    +ChangeSubscription(plan : string)
+  }
+
+  class PasswordResetToken {
+    +Id : int
+    +UserId : int
+    +CodeHash : string
+    +ExpiresAt : DateTime
+    +UsedAt : DateTime?
+    +Attempts : int
+    +CreatedAt : DateTime
+    --
+    +IsActive : bool
+    +MarkUsed()
+    +RegisterFailedAttempt()
+  }
+
+  enum UserRole {
+    Rancher
+    Admin
+  }
+
+  User --> UserRole
+}
+
+' =====================================================================
+' RanchManagement — hato, establos, inventario
+' =====================================================================
+package "RanchManagement" {
+  class Bovine {
+    +Id : int
+    +Name : string
+    +Gender : string
+    +BirthDate : DateOnly
+    +Breed : string
+    +StableId : int
+    +BovineImg : string
+    +UserId : int
+    +MinTemperature : double
+    +MaxTemperature : double
+    +MinHeartRate : int
+    +MaxHeartRate : int
+    --
+    +Update(cmd : UpdateBovineCommand)
+  }
+
+  class Stable {
+    +Id : int
+    +Name : string
+    +Limit : int
+    +UserId : int
+  }
+
+  class Category {
+    +Id : int
+    +Name : string
+    +UserId : int
+  }
+
+  class Product {
+    +Id : int
+    +Name : string
+    +CategoryId : int
+    +Quantity : int
+    +UserId : int
+    +ExpirationDate : DateOnly?
+    +Unit : string?
+    +ExpiryNotificationSentAt : DateTime?
+    --
+    +MarkExpiryNotificationSent()
+  }
+
+  class BovineBreed {
+    +Id : int
+    +Name : string
+    +MinTemperature : double
+    +MaxTemperature : double
+    +MinHeartRate : int
+    +MaxHeartRate : int
+    +UserId : int?
+  }
+
+  Bovine "0..*" --> "1" Stable : stableId
+  Product "0..*" --> "1" Category : categoryId
+}
+
+' =====================================================================
+' StaffAdministration — personal / accesos delegados
+' =====================================================================
+package "StaffAdministration" {
+  class Staff {
+    +Id : int
+    +Name : string
+    +Email : string
+    +EmployeeStatus : EmployeeStatus
+    +AccessLevel : StaffAccessLevel
+    +UserId : int
+    +LinkedUserId : int?
+  }
+
+  class EmployeeStatus <<value object>> {
+    +Value : int
+  }
+
+  enum StaffAccessLevel {
+    ReadOnly = 1
+    Editor = 2
+    Manager = 3
+  }
+
+  Staff *-- EmployeeStatus
+  Staff --> StaffAccessLevel
+}
+
+' =====================================================================
+' CampaignManagement — campañas sanitarias
+' =====================================================================
+package "CampaignManagement" {
+  class Campaign {
+    +Id : int
+    +Name : string
+    +Description : string
+    +StartDate : DateOnly
+    +EndDate : DateOnly
+    +UserId : int
+  }
+
+  class CampaignStable {
+    +CampaignId : int
+    +StableId : int
+  }
+
+  class CampaignBovine {
+    +CampaignId : int
+    +BovineId : int
+  }
+
+  Campaign "1" *-- "0..*" CampaignStable
+  Campaign "1" *-- "0..*" CampaignBovine
+}
+
+' =====================================================================
+' IoTMonitoring — telemetría y collares
+' =====================================================================
+package "IoTMonitoring" {
+  class BovineHealthRecord {
+    +Id : int
+    +BovineId : int
+    +UserId : int
+    +DeviceId : string
+    +Temperature : float
+    +HeartRate : float
+    +BatteryLevel : int
+    +IsAlert : bool
+    +RecordedAt : DateTime
+    --
+    +EvaluateAlert(minT, maxT, minHr, maxHr) : bool
+  }
+
+  class Collar {
+    +Id : int
+    +DeviceId : string
+    +BovineId : int
+    +UserId : int
+    +RegisteredAt : DateTime
+    +LifecycleStatus : CollarLifecycleStatus
+    --
+    +IsActive : bool
+    +ResolveOperationalStatus(lastSeenAtUtc) : CollarOperationalStatus
+    +MarkMaintenance() / Suspend() / Reactivate()
+    +Reassign(bovineId : int)
+  }
+
+  enum CollarLifecycleStatus {
+    Active
+    Maintenance
+    Suspended
+  }
+
+  enum CollarOperationalStatus {
+    Active
+    NoSignal
+    Maintenance
+    Suspended
+  }
+
+  Collar --> CollarLifecycleStatus
+  Collar ..> CollarOperationalStatus
+}
+
+' =====================================================================
+' AlertManagement — alertas sanitarias
+' =====================================================================
+package "AlertManagement" {
+  class Alert {
+    +Id : int
+    +BovineId : int?
+    +UserId : int
+    +AlertType : AlertType
+    +UrgencyLevel : UrgencyLevel
+    +Status : AlertStatus
+    +Message : string
+    +CreatedAt : DateTime
+    --
+    +{static} CreateBiometric(...) : Alert
+    +{static} CreateCollarReturn(...) : Alert
+    +MarkAsRead()
+  }
+
+  enum AlertType {
+    BiometricAnomaly
+    VisualAnomaly
+    CollarReturn
+  }
+
+  enum UrgencyLevel {
+    Green = 1
+    Yellow = 2
+    Red = 3
+  }
+
+  enum AlertStatus {
+    Unread
+    Read
+  }
+
+  Alert --> AlertType
+  Alert --> UrgencyLevel
+  Alert --> AlertStatus
+}
+
+' =====================================================================
+' AiAssistant — visión y chat conversacional
+' =====================================================================
+package "AiAssistant" {
+  class BovineAnalysis {
+    +Id : int
+    +UserId : int
+    +BovineId : int
+    +Score : decimal
+    +VisibleIssues : string
+    +UrgencyLevel : UrgencyLevel
+    +Recommendation : string
+    +Confidence : decimal
+    +CreatedAt : DateTime
+  }
+
+  class GeneralChatSession {
+    +Id : int
+    +UserId : int
+    +MessagesJson : string
+    +CreatedAt : DateTime
+    +UpdatedAt : DateTime
+  }
+
+  class BovineChatSession {
+    +Id : int
+    +UserId : int
+    +BovineId : int
+    +MessagesJson : string
+    +CreatedAt : DateTime
+    +UpdatedAt : DateTime
+  }
+
+  class ChatMessage <<value object>> {
+    +Role : string
+    +Content : string
+    +Timestamp : DateTime
+  }
+
+  enum SessionType {
+    General = 1
+    Bovine = 2
+  }
+
+  GeneralChatSession ..> ChatMessage : MessagesJson
+  BovineChatSession ..> ChatMessage : MessagesJson
+}
+
+' =====================================================================
+' SubscriptionManagement — planes, pagos y collares adicionales
+' =====================================================================
+package "SubscriptionManagement" {
+  class Subscription {
+    +Id : int
+    +UserId : int
+    +Plan : PlanType
+    +Status : SubscriptionStatus
+    +StartDate : DateTime?
+    +NextRenewal : DateTime?
+    +SuspendedAt : DateTime?
+    +Reminder10SentForRenewal : DateTime?
+    +Reminder5SentForRenewal : DateTime?
+  }
+
+  class Payment {
+    +Id : int
+    +UserId : int
+    +Concept : PaymentConcept
+    +Amount : decimal
+    +Currency : string
+    +Status : PaymentStatus
+    +ProviderRef : string?
+    +IdempotencyKey : string
+    +PaidAt : DateTime?
+  }
+
+  class AdditionalCollarRequest {
+    +Id : int
+    +UserId : int
+    +Status : AdditionalCollarStatus
+    +MonthlyAmount : decimal
+    +RequestedAt : DateTime
+  }
+
+  enum PlanType {
+    Free
+    Plus
+  }
+
+  enum SubscriptionStatus {
+    Active
+    Expired
+    Suspended
+    Cancelled
+  }
+
+  enum PaymentConcept {
+    PlusMonthly
+    AdditionalCollar
+  }
+
+  enum PaymentStatus {
+    Pending
+    Paid
+    Failed
+    Refunded
+  }
+
+  enum AdditionalCollarStatus {
+    Requested
+    Approved
+    Delivered
+    Cancelled
+  }
+
+  Subscription --> PlanType
+  Subscription --> SubscriptionStatus
+  Payment --> PaymentConcept
+  Payment --> PaymentStatus
+  AdditionalCollarRequest --> AdditionalCollarStatus
+}
+
+' =====================================================================
+' Referencias entre bounded contexts (por id, vía ACL — no navegación EF)
+' =====================================================================
+note as N1
+  Los contextos se referencian **por id** (User.Id, Bovine.Id, ...)
+  a través de fachadas ACL, no por navegación directa entre agregados.
+  Las flechas punteadas representan estas referencias lógicas.
+end note
+
+Collar ..> Bovine : bovineId
+BovineHealthRecord ..> Bovine : bovineId
+Alert ..> Bovine : bovineId?
+BovineAnalysis ..> Bovine : bovineId
+CampaignBovine ..> Bovine : bovineId
+CampaignStable ..> Stable : stableId
+Staff ..> User : userId / linkedUserId
+Subscription ..> User : userId
+PasswordResetToken ..> User : userId
+
+@enduml

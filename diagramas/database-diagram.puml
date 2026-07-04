@@ -1,0 +1,294 @@
+@startuml VacApp-Backend-Database
+title VacApp — Diagrama de Base de Datos (MySQL, EF Core)
+
+skinparam linetype ortho
+skinparam shadowing false
+hide circle
+
+' Notación: || uno · o{ muchos · o| cero-o-uno
+' Línea sólida = FK física (declarada en EF). Línea punteada = referencia
+' por id entre bounded contexts (no es FK física, se resuelve vía ACL).
+
+' =====================================================================
+' IAM
+' =====================================================================
+entity "users" as users {
+  *id : int <<PK>>
+  --
+  *username : varchar
+  *password : varchar
+  *email : varchar
+  *subscription_plan : varchar
+  *role : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "password-reset-tokens" as password_reset_tokens {
+  *id : int <<PK>>
+  --
+  *user_id : int <<idx>>
+  *code_hash : varchar
+  *expires_at : datetime
+  used_at : datetime
+  *attempts : int
+  *created_at : datetime
+}
+
+' =====================================================================
+' RanchManagement
+' =====================================================================
+entity "stables" as stables {
+  *id : int <<PK>>
+  --
+  *name : varchar
+  *limit : int
+  *user_id : int
+}
+
+entity "bovines" as bovines {
+  *id : int <<PK>>
+  --
+  *name : varchar
+  *gender : varchar
+  *birth_date : datetime
+  *breed : varchar
+  *bovine_img : varchar
+  *stable_id : int <<FK>>
+  *user_id : int
+  *min_temperature : double
+  *max_temperature : double
+  *min_heart_rate : int
+  *max_heart_rate : int
+}
+
+entity "bovine-breeds" as bovine_breeds {
+  *id : int <<PK>>
+  --
+  *name : varchar
+  *min_temperature : double
+  *max_temperature : double
+  *min_heart_rate : int
+  *max_heart_rate : int
+  user_id : int
+}
+
+entity "categories" as categories {
+  *id : int <<PK>>
+  --
+  *name : varchar
+  *user_id : int
+}
+
+entity "products" as products {
+  *id : int <<PK>>
+  --
+  *name : varchar
+  *category_id : int <<FK>>
+  *quantity : int
+  *user_id : int
+  expiration_date : datetime
+  unit : varchar
+  expiry_notification_sent_at : datetime
+}
+
+' =====================================================================
+' StaffAdministration
+' =====================================================================
+entity "staff" as staff {
+  *id : int <<PK>>
+  --
+  *name : varchar
+  *email : varchar
+  *employee_status : int
+  *user_id : int <<uq>>
+  linked_user_id : int <<uq>>
+  *access_level : int
+}
+
+' =====================================================================
+' CampaignManagement
+' =====================================================================
+entity "campaigns" as campaigns {
+  *id : int <<PK>>
+  --
+  *name : varchar
+  *description : varchar
+  *start_date : datetime
+  *end_date : datetime
+  *user_id : int
+}
+
+entity "campaign-stables" as campaign_stables {
+  *campaign_id : int <<PK,FK>>
+  *stable_id : int <<PK>>
+}
+
+entity "campaign-bovines" as campaign_bovines {
+  *campaign_id : int <<PK,FK>>
+  *bovine_id : int <<PK>>
+}
+
+' =====================================================================
+' IoTMonitoring
+' =====================================================================
+entity "bovine-health-records" as bovine_health_records {
+  *id : int <<PK>>
+  --
+  *bovine_id : int <<FK>>
+  *user_id : int
+  *device_id : varchar
+  *temperature : float
+  *heart_rate : float
+  *battery_level : int
+  *is_alert : bool
+  *recorded_at : datetime
+}
+
+entity "collars" as collars {
+  *id : int <<PK>>
+  --
+  *device_id : varchar <<uq>>
+  *bovine_id : int <<FK>>
+  *user_id : int
+  *registered_at : datetime
+  *lifecycle_status : varchar
+}
+
+' =====================================================================
+' AlertManagement
+' =====================================================================
+entity "alerts" as alerts {
+  *id : int <<PK>>
+  --
+  bovine_id : int
+  *user_id : int
+  *alert_type : varchar
+  *urgency_level : varchar
+  *status : varchar
+  *message : varchar
+  *created_at : datetime
+}
+
+' =====================================================================
+' AiAssistant
+' =====================================================================
+entity "bovine-analyses" as bovine_analyses {
+  *id : int <<PK>>
+  --
+  *user_id : int
+  *bovine_id : int
+  *score : decimal
+  *visible_issues : text
+  *urgency_level : int
+  *recommendation : text
+  *confidence : decimal
+  *created_at : datetime
+}
+
+entity "general-chat-sessions" as general_chat_sessions {
+  *id : int <<PK>>
+  --
+  *user_id : int
+  *messages_json : text
+  *created_at : datetime
+  *updated_at : datetime
+}
+
+entity "bovine-chat-sessions" as bovine_chat_sessions {
+  *id : int <<PK>>
+  --
+  *user_id : int
+  *bovine_id : int
+  *messages_json : text
+  *created_at : datetime
+  *updated_at : datetime
+}
+
+' =====================================================================
+' SubscriptionManagement
+' =====================================================================
+entity "subscriptions" as subscriptions {
+  *id : int <<PK>>
+  --
+  *user_id : int <<uq>>
+  *plan : varchar
+  *status : varchar
+  start_date : datetime
+  next_renewal : datetime
+  suspended_at : datetime
+  reminder10_sent_for_renewal : datetime
+  reminder5_sent_for_renewal : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "payments" as payments {
+  *id : int <<PK>>
+  --
+  *user_id : int
+  *concept : varchar
+  *amount : decimal
+  *currency : varchar
+  *status : varchar
+  provider_ref : varchar
+  *idempotency_key : varchar <<uq>>
+  paid_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "additional-collar-requests" as additional_collar_requests {
+  *id : int <<PK>>
+  --
+  *user_id : int
+  *status : varchar
+  *monthly_amount : decimal
+  *requested_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+' =====================================================================
+' Relaciones — FK físicas (EF-declaradas): línea sólida
+' =====================================================================
+categories ||--o{ products : category_id
+stables    ||--o{ bovines  : stable_id
+bovines    ||--o{ bovine_health_records : bovine_id
+bovines    ||--o{ collars  : bovine_id
+campaigns  ||--o{ campaign_stables : campaign_id
+campaigns  ||--o{ campaign_bovines : campaign_id
+
+' =====================================================================
+' Relaciones — referencias por id entre contextos (sin FK física): punteada
+' =====================================================================
+users ||..o| subscriptions : user_id
+users ||..o{ password_reset_tokens : user_id
+users ||..o{ stables : user_id
+users ||..o{ bovines : user_id
+users ||..o{ categories : user_id
+users ||..o{ products : user_id
+users ||..o{ staff : user_id
+users ||..o{ campaigns : user_id
+users ||..o{ bovine_health_records : user_id
+users ||..o{ collars : user_id
+users ||..o{ alerts : user_id
+users ||..o{ payments : user_id
+users ||..o{ additional_collar_requests : user_id
+users ||..o{ bovine_analyses : user_id
+users ||..o{ general_chat_sessions : user_id
+users ||..o{ bovine_chat_sessions : user_id
+
+bovines ||..o{ alerts : bovine_id
+bovines ||..o{ bovine_analyses : bovine_id
+bovines ||..o{ bovine_chat_sessions : bovine_id
+bovines ||..o{ campaign_bovines : bovine_id
+stables ||..o{ campaign_stables : stable_id
+
+note bottom of users
+  Casi todas las tablas guardan **user_id** (dueño del rancho).
+  Entre bounded contexts la referencia es por id vía fachadas ACL,
+  por eso no existe FK física (líneas punteadas).
+end note
+
+@enduml
