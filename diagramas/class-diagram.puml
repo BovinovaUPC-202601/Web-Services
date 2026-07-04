@@ -1,4 +1,5 @@
 @startuml VacApp-Backend-ClassDiagram
+!pragma layout elk
 title VacApp — Diagrama de Clases del Backend (DDD/Hexagonal, 4 capas por Bounded Context)
 
 top to bottom direction
@@ -60,9 +61,11 @@ package "IAM" as BC_IAM #F4F8F2 {
     class HashingService <<BCrypt>>
     class TokenService <<JWT>>
   }
-  IAM_I -[hidden]down- IAM_A
-  IAM_A -[hidden]down- IAM_D
-  IAM_D -[hidden]down- IAM_INF
+  UserController ..> UserCommandService
+  UserCommandService ..> User
+  UserRepository ..|> IUserRepository
+  PasswordResetTokenRepository ..|> IPasswordResetTokenRepository
+  User --> UserRole
 }
 
 ' ==================== StaffAdministration ====================
@@ -98,10 +101,12 @@ package "StaffAdministration" as BC_STAFF #F4F8F2 {
   package "Infrastructure" as ST_INF {
     class StaffRepository
   }
-  ST_I -[hidden]down- ST_A
-  ST_A -[hidden]down- ST_D
-  ST_D -[hidden]down- ST_INF
+  StaffController ..> StaffCommandService
+  StaffCommandService ..> Staff
+  StaffRepository ..|> IStaffRepository
+  StaffAccessService ..|> IStaffAccessService
   Staff *-- EmployeeStatus
+  Staff --> StaffAccessLevel
 }
 
 ' ==================== CampaignManagement ====================
@@ -135,9 +140,9 @@ package "CampaignManagement" as BC_CAMP #F4F8F2 {
   package "Infrastructure" as CA_INF {
     class CampaignRepository
   }
-  CA_I -[hidden]down- CA_A
-  CA_A -[hidden]down- CA_D
-  CA_D -[hidden]down- CA_INF
+  CampaignController ..> CampaignCommandService
+  CampaignCommandService ..> Campaign
+  CampaignRepository ..|> ICampaignRepository
   Campaign *-- CampaignStable
   Campaign *-- CampaignBovine
 }
@@ -186,9 +191,14 @@ package "AlertManagement" as BC_ALERT #F4F8F2 {
     class OneSignalPushSender
     class LogPushSender
   }
-  AL_I -[hidden]down- AL_A
-  AL_A -[hidden]down- AL_D
-  AL_D -[hidden]down- AL_INF
+  AlertController ..> AlertQueryService
+  AbnormalTelemetryDetectedHandler ..> Alert
+  AlertRepository ..|> IAlertRepository
+  OneSignalPushSender ..|> IPushNotificationService
+  LogPushSender ..|> IPushNotificationService
+  Alert --> AlertType
+  Alert --> UrgencyLevel
+  Alert --> AlertStatus
 }
 
 ' #####################################################################
@@ -263,9 +273,12 @@ package "RanchManagement" as BC_RANCH #FFFDF4 {
     class CategoryRepository
     class BovineBreedRepository
   }
-  RA_I -[hidden]down- RA_A
-  RA_A -[hidden]down- RA_D
-  RA_D -[hidden]down- RA_INF
+  BovineController ..> BovineCommandService
+  BovineCommandService ..> Bovine
+  BovineRepository ..|> IBovineRepository
+  StableRepository ..|> IStableRepository
+  ProductRepository ..|> IProductRepository
+  CategoryRepository ..|> ICategoryRepository
   Bovine --> Stable
   Product --> Category
 }
@@ -322,9 +335,12 @@ package "IoTMonitoring" as BC_IOT #FFFDF4 {
     class BovineHealthRecordRepository
     class MqttTelemetryConsumer <<MQTT>>
   }
-  IO_I -[hidden]down- IO_A
-  IO_A -[hidden]down- IO_D
-  IO_D -[hidden]down- IO_INF
+  CollarController ..> CollarCommandService
+  BovineHealthRecordCommandService ..> BovineHealthRecord
+  CollarRepository ..|> ICollarRepository
+  BovineHealthRecordRepository ..|> IBovineHealthRecordRepository
+  Collar --> CollarLifecycleStatus
+  Collar ..> CollarOperationalStatus
 }
 
 ' ==================== SubscriptionManagement ====================
@@ -390,9 +406,16 @@ package "SubscriptionManagement" as BC_SUB #FFFDF4 {
     class ResendEmailSender
     class LogEmailSender
   }
-  SU_I -[hidden]down- SU_A
-  SU_A -[hidden]down- SU_D
-  SU_D -[hidden]down- SU_INF
+  SubscriptionController ..> SubscriptionCommandService
+  PaymentController ..> PaymentCommandService
+  SubscriptionCommandService ..> Subscription
+  SubscriptionRepository ..|> ISubscriptionRepository
+  PaymentRepository ..|> IPaymentRepository
+  MockPaymentGateway ..|> IPaymentGateway
+  ResendEmailSender ..|> IEmailSender
+  LogEmailSender ..|> IEmailSender
+  Subscription --> PlanType
+  Payment --> PaymentStatus
 }
 
 ' ==================== AiAssistant ====================
@@ -441,9 +464,12 @@ package "AiAssistant" as BC_AI #FFFDF4 {
     class LmStudioVisionService
     class OpenAICompatibleModelClient <<OpenAI/Azure>>
   }
-  AI_I -[hidden]down- AI_A
-  AI_A -[hidden]down- AI_D
-  AI_D -[hidden]down- AI_INF
+  AIController ..> AIAssistantCommandService
+  AIAssistantCommandService ..> BovineAnalysis
+  AISessionRepository ..|> IAISessionRepository
+  BovineAnalysisRepository ..|> IBovineAnalysisRepository
+  LmStudioChatService ..|> IAIChatService
+  LmStudioVisionService ..|> IAIVisionService
 }
 
 ' ==================== Persistencia compartida ====================
