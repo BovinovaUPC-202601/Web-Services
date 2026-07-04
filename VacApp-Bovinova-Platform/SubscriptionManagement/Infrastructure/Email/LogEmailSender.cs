@@ -12,9 +12,11 @@ public class LogEmailSender(ILogger<LogEmailSender> logger) : IEmailSender
 {
     public Task SendAsync(string to, string subject, string html, string? idempotencyKey = null)
     {
+        // Log the body too: with no Resend configured this is the only place the content
+        // (e.g. a password-recovery code) surfaces, so the demo/dev flow stays testable.
         logger.LogInformation(
-            "[EMAIL:noop] would send to {To} | subject: {Subject} | idempotency: {Key}",
-            to, subject, idempotencyKey ?? "-");
+            "[EMAIL:noop] would send to {To} | subject: {Subject} | idempotency: {Key}\n{Html}",
+            to, subject, idempotencyKey ?? "-", html);
         return Task.CompletedTask;
     }
 }

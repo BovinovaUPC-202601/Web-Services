@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions options) : base(options) { }
 
     public DbSet<User> Users { get; set; }
+    public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<BovineHealthRecord> BovineHealthRecords { get; set; }
@@ -64,6 +65,17 @@ public class AppDbContext : DbContext
         builder.Entity<User>().Property(f => f.Email).IsRequired();
         builder.Entity<User>().Property(f => f.Role).IsRequired()
             .HasConversion<string>().HasColumnName("role");
+
+        // Password reset token (RF-03)
+        builder.Entity<PasswordResetToken>().HasKey(t => t.Id);
+        builder.Entity<PasswordResetToken>().Property(t => t.Id).IsRequired().ValueGeneratedOnAdd();
+        builder.Entity<PasswordResetToken>().Property(t => t.UserId).IsRequired().HasColumnName("user_id");
+        builder.Entity<PasswordResetToken>().Property(t => t.CodeHash).IsRequired().HasColumnName("code_hash");
+        builder.Entity<PasswordResetToken>().Property(t => t.ExpiresAt).IsRequired().HasColumnName("expires_at");
+        builder.Entity<PasswordResetToken>().Property(t => t.UsedAt).HasColumnName("used_at");
+        builder.Entity<PasswordResetToken>().Property(t => t.Attempts).IsRequired();
+        builder.Entity<PasswordResetToken>().Property(t => t.CreatedAt).IsRequired().HasColumnName("created_at");
+        builder.Entity<PasswordResetToken>().HasIndex(t => t.UserId);
 
         /* Ranch Management */
         //Stable

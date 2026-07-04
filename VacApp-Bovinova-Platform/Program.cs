@@ -181,6 +181,7 @@ builder.Services.AddScoped<IMediaStorageService>(_ =>
 
 //IAM
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
 builder.Services.AddScoped<IUserCommandService, UserCommandService>();
 builder.Services.AddScoped<IUserQueryService, UserQueryService>();
 builder.Services.AddScoped<IHashingService, HashingService>();

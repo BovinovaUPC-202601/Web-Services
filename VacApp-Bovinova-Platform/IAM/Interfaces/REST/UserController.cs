@@ -4,6 +4,7 @@ using Swashbuckle.AspNetCore.Annotations;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.CampaignManagement.Domain.Services;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Aggregates;
+using VacApp_Bovinova_Platform.IAM.Domain.Model.Commands;
 using VacApp_Bovinova_Platform.IAM.Domain.Model.Queries;
 using VacApp_Bovinova_Platform.IAM.Domain.Services;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Attributes;
@@ -66,6 +67,33 @@ namespace VacApp_Bovinova_Platform.IAM.Interfaces.REST
             var userResource = UserResourceFromEntityAssembler.ToResourceFromEntity(result, userName, email);
 
             return Ok(userResource);
+        }
+
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        [SwaggerOperation(
+            Summary = "Request a password recovery code",
+            Description = "Emails a 6-digit recovery code if the address is registered. Always returns 200 so it never reveals whether the account exists.")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordResource resource)
+        {
+            await commandService.Handle(new RequestPasswordResetCommand(resource.Email));
+            return Ok(new { message = "Si el correo está registrado, te enviamos un código de recuperación." });
+        }
+
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        [SwaggerOperation(
+            Summary = "Reset the password using the emailed code",
+            Description = "Validates the 6-digit code and sets a new password.")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordResource resource)
+        {
+            var ok = await commandService.Handle(
+                new ResetPasswordCommand(resource.Email, resource.Code, resource.NewPassword));
+
+            if (!ok)
+                return BadRequest(new { message = "El código es inválido o expiró. Solicita uno nuevo." });
+
+            return Ok(new { message = "Contraseña actualizada. Ya puedes iniciar sesión." });
         }
 
         [HttpGet("profile")]
