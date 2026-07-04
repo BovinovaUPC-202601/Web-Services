@@ -1,396 +1,479 @@
 @startuml VacApp-Backend-ClassDiagram
-title VacApp — Diagrama de Clases del Backend (Dominio DDD por Bounded Context)
+title VacApp — Diagrama de Clases del Backend (DDD/Hexagonal, 4 capas por Bounded Context)
 
+top to bottom direction
 skinparam linetype ortho
 skinparam shadowing false
 skinparam classAttributeIconSize 0
-hide circle
+skinparam packageStyle rectangle
+skinparam nodesep 8
+skinparam ranksep 18
+hide empty members
 
-' =====================================================================
-' IAM — Identity & Access Management
-' =====================================================================
-package "IAM" {
-  class User {
-    +Id : int
-    +Username : string
-    +Password : string
-    +Email : string
-    +SubscriptionPlan : string
-    +Role : UserRole
-    +CreatedDate : DateTimeOffset?
-    +UpdatedDate : DateTimeOffset?
-    --
-    +Update(cmd : UpdateUserCommand)
-    +ChangeSubscription(plan : string)
+legend top
+  Cada Bounded Context se estructura en 4 capas. La dependencia apunta hacia adentro:
+  **Interfaces (REST) -> Application -> Domain <- Infrastructure**.
+  Los adaptadores de Infrastructure implementan ( ..|> ) los puertos (interfaces) del Domain/Application.
+  Se omiten DTOs (Resources, Commands, Assemblers) por claridad.
+endlegend
+
+' #####################################################################
+' COLUMNA IZQUIERDA
+' #####################################################################
+
+' ============================ IAM ============================
+package "IAM" as BC_IAM #F4F8F2 {
+  package "Interfaces" as IAM_I {
+    class UserController
   }
-
-  class PasswordResetToken {
-    +Id : int
-    +UserId : int
-    +CodeHash : string
-    +ExpiresAt : DateTime
-    +UsedAt : DateTime?
-    +Attempts : int
-    +CreatedAt : DateTime
-    --
-    +IsActive : bool
-    +MarkUsed()
-    +RegisterFailedAttempt()
+  package "Application" as IAM_A {
+    class UserCommandService
+    class UserQueryService
   }
-
-  enum UserRole {
-    Rancher
-    Admin
+  package "Domain" as IAM_D {
+    class User {
+      +Id : int
+      +Username : string
+      +Email : string
+      +Password : string
+      +SubscriptionPlan : string
+      +Role : UserRole
+    }
+    class PasswordResetToken {
+      +UserId : int
+      +CodeHash : string
+      +ExpiresAt : DateTime
+      +UsedAt : DateTime?
+      +Attempts : int
+      +MarkUsed()
+    }
+    enum UserRole {
+      Rancher
+      Admin
+    }
+    interface IUserRepository
+    interface IPasswordResetTokenRepository
   }
-
-  User --> UserRole
+  package "Infrastructure" as IAM_INF {
+    class UserRepository
+    class PasswordResetTokenRepository
+    class HashingService <<BCrypt>>
+    class TokenService <<JWT>>
+  }
+  IAM_I -[hidden]down- IAM_A
+  IAM_A -[hidden]down- IAM_D
+  IAM_D -[hidden]down- IAM_INF
 }
 
-' =====================================================================
-' RanchManagement — hato, establos, inventario
-' =====================================================================
-package "RanchManagement" {
-  class Bovine {
-    +Id : int
-    +Name : string
-    +Gender : string
-    +BirthDate : DateOnly
-    +Breed : string
-    +StableId : int
-    +BovineImg : string
-    +UserId : int
-    +MinTemperature : double
-    +MaxTemperature : double
-    +MinHeartRate : int
-    +MaxHeartRate : int
-    --
-    +Update(cmd : UpdateBovineCommand)
+' ==================== StaffAdministration ====================
+package "StaffAdministration" as BC_STAFF #F4F8F2 {
+  package "Interfaces" as ST_I {
+    class StaffController
   }
-
-  class Stable {
-    +Id : int
-    +Name : string
-    +Limit : int
-    +UserId : int
+  package "Application" as ST_A {
+    class StaffCommandService
+    class StaffQueryService
+    class StaffAccessService
   }
-
-  class Category {
-    +Id : int
-    +Name : string
-    +UserId : int
+  package "Domain" as ST_D {
+    class Staff {
+      +Id : int
+      +Name : string
+      +Email : string
+      +UserId : int
+      +LinkedUserId : int?
+      +AccessLevel : StaffAccessLevel
+    }
+    class EmployeeStatus <<VO>> {
+      +Value : int
+    }
+    enum StaffAccessLevel {
+      ReadOnly
+      Editor
+      Manager
+    }
+    interface IStaffRepository
+    interface IStaffAccessService
   }
-
-  class Product {
-    +Id : int
-    +Name : string
-    +CategoryId : int
-    +Quantity : int
-    +UserId : int
-    +ExpirationDate : DateOnly?
-    +Unit : string?
-    +ExpiryNotificationSentAt : DateTime?
-    --
-    +MarkExpiryNotificationSent()
+  package "Infrastructure" as ST_INF {
+    class StaffRepository
   }
-
-  class BovineBreed {
-    +Id : int
-    +Name : string
-    +MinTemperature : double
-    +MaxTemperature : double
-    +MinHeartRate : int
-    +MaxHeartRate : int
-    +UserId : int?
-  }
-
-  Bovine "0..*" --> "1" Stable : stableId
-  Product "0..*" --> "1" Category : categoryId
-}
-
-' =====================================================================
-' StaffAdministration — personal / accesos delegados
-' =====================================================================
-package "StaffAdministration" {
-  class Staff {
-    +Id : int
-    +Name : string
-    +Email : string
-    +EmployeeStatus : EmployeeStatus
-    +AccessLevel : StaffAccessLevel
-    +UserId : int
-    +LinkedUserId : int?
-  }
-
-  class EmployeeStatus <<value object>> {
-    +Value : int
-  }
-
-  enum StaffAccessLevel {
-    ReadOnly = 1
-    Editor = 2
-    Manager = 3
-  }
-
+  ST_I -[hidden]down- ST_A
+  ST_A -[hidden]down- ST_D
+  ST_D -[hidden]down- ST_INF
   Staff *-- EmployeeStatus
-  Staff --> StaffAccessLevel
 }
 
-' =====================================================================
-' CampaignManagement — campañas sanitarias
-' =====================================================================
-package "CampaignManagement" {
-  class Campaign {
-    +Id : int
-    +Name : string
-    +Description : string
-    +StartDate : DateOnly
-    +EndDate : DateOnly
-    +UserId : int
+' ==================== CampaignManagement ====================
+package "CampaignManagement" as BC_CAMP #F4F8F2 {
+  package "Interfaces" as CA_I {
+    class CampaignController
   }
-
-  class CampaignStable {
-    +CampaignId : int
-    +StableId : int
+  package "Application" as CA_A {
+    class CampaignCommandService
+    class CampaignQueryService
   }
-
-  class CampaignBovine {
-    +CampaignId : int
-    +BovineId : int
+  package "Domain" as CA_D {
+    class Campaign {
+      +Id : int
+      +Name : string
+      +Description : string
+      +StartDate : DateOnly
+      +EndDate : DateOnly
+      +UserId : int
+    }
+    class CampaignStable {
+      +CampaignId : int
+      +StableId : int
+    }
+    class CampaignBovine {
+      +CampaignId : int
+      +BovineId : int
+    }
+    interface ICampaignRepository
   }
-
-  Campaign "1" *-- "0..*" CampaignStable
-  Campaign "1" *-- "0..*" CampaignBovine
+  package "Infrastructure" as CA_INF {
+    class CampaignRepository
+  }
+  CA_I -[hidden]down- CA_A
+  CA_A -[hidden]down- CA_D
+  CA_D -[hidden]down- CA_INF
+  Campaign *-- CampaignStable
+  Campaign *-- CampaignBovine
 }
 
-' =====================================================================
-' IoTMonitoring — telemetría y collares
-' =====================================================================
-package "IoTMonitoring" {
-  class BovineHealthRecord {
-    +Id : int
-    +BovineId : int
-    +UserId : int
-    +DeviceId : string
-    +Temperature : float
-    +HeartRate : float
-    +BatteryLevel : int
-    +IsAlert : bool
-    +RecordedAt : DateTime
-    --
-    +EvaluateAlert(minT, maxT, minHr, maxHr) : bool
+' ==================== AlertManagement ====================
+package "AlertManagement" as BC_ALERT #F4F8F2 {
+  package "Interfaces" as AL_I {
+    class AlertController
   }
-
-  class Collar {
-    +Id : int
-    +DeviceId : string
-    +BovineId : int
-    +UserId : int
-    +RegisteredAt : DateTime
-    +LifecycleStatus : CollarLifecycleStatus
-    --
-    +IsActive : bool
-    +ResolveOperationalStatus(lastSeenAtUtc) : CollarOperationalStatus
-    +MarkMaintenance() / Suspend() / Reactivate()
-    +Reassign(bovineId : int)
+  package "Application" as AL_A {
+    class AlertCommandService
+    class AlertQueryService
+    class AbnormalTelemetryDetectedHandler
+    class SubscriptionEndedHandler
   }
-
-  enum CollarLifecycleStatus {
-    Active
-    Maintenance
-    Suspended
+  package "Domain" as AL_D {
+    class Alert {
+      +Id : int
+      +BovineId : int?
+      +UserId : int
+      +AlertType : AlertType
+      +UrgencyLevel : UrgencyLevel
+      +Status : AlertStatus
+      +Message : string
+      +MarkAsRead()
+    }
+    enum AlertType {
+      BiometricAnomaly
+      VisualAnomaly
+      CollarReturn
+    }
+    enum UrgencyLevel {
+      Green
+      Yellow
+      Red
+    }
+    enum AlertStatus {
+      Unread
+      Read
+    }
+    interface IAlertRepository
+    interface IPushNotificationService <<port>>
   }
-
-  enum CollarOperationalStatus {
-    Active
-    NoSignal
-    Maintenance
-    Suspended
+  package "Infrastructure" as AL_INF {
+    class AlertRepository
+    class OneSignalPushSender
+    class LogPushSender
   }
-
-  Collar --> CollarLifecycleStatus
-  Collar ..> CollarOperationalStatus
+  AL_I -[hidden]down- AL_A
+  AL_A -[hidden]down- AL_D
+  AL_D -[hidden]down- AL_INF
 }
 
-' =====================================================================
-' AlertManagement — alertas sanitarias
-' =====================================================================
-package "AlertManagement" {
-  class Alert {
-    +Id : int
-    +BovineId : int?
-    +UserId : int
-    +AlertType : AlertType
-    +UrgencyLevel : UrgencyLevel
-    +Status : AlertStatus
-    +Message : string
-    +CreatedAt : DateTime
-    --
-    +{static} CreateBiometric(...) : Alert
-    +{static} CreateCollarReturn(...) : Alert
-    +MarkAsRead()
-  }
+' #####################################################################
+' COLUMNA DERECHA
+' #####################################################################
 
-  enum AlertType {
-    BiometricAnomaly
-    VisualAnomaly
-    CollarReturn
+' ==================== RanchManagement ====================
+package "RanchManagement" as BC_RANCH #FFFDF4 {
+  package "Interfaces" as RA_I {
+    class BovineController
+    class StableController
+    class InventoryController
   }
-
-  enum UrgencyLevel {
-    Green = 1
-    Yellow = 2
-    Red = 3
+  package "Application" as RA_A {
+    class BovineCommandService
+    class BovineQueryService
+    class StableCommandService
+    class StableQueryService
+    class ProductCommandService
+    class CategoryCommandService
+    class BovineBreedCommandService
   }
-
-  enum AlertStatus {
-    Unread
-    Read
+  package "Domain" as RA_D {
+    class Bovine {
+      +Id : int
+      +Name : string
+      +Gender : string
+      +BirthDate : DateOnly
+      +Breed : string
+      +StableId : int
+      +UserId : int
+      +MinTemperature : double
+      +MaxTemperature : double
+      +MinHeartRate : int
+      +MaxHeartRate : int
+    }
+    class Stable {
+      +Id : int
+      +Name : string
+      +Limit : int
+      +UserId : int
+    }
+    class Product {
+      +Id : int
+      +Name : string
+      +CategoryId : int
+      +Quantity : int
+      +UserId : int
+      +ExpirationDate : DateOnly?
+    }
+    class Category {
+      +Id : int
+      +Name : string
+      +UserId : int
+    }
+    class BovineBreed {
+      +Id : int
+      +Name : string
+      +MinTemperature : double
+      +MaxTemperature : double
+      +UserId : int?
+    }
+    interface IBovineRepository
+    interface IStableRepository
+    interface IProductRepository
+    interface ICategoryRepository
   }
-
-  Alert --> AlertType
-  Alert --> UrgencyLevel
-  Alert --> AlertStatus
+  package "Infrastructure" as RA_INF {
+    class BovineRepository
+    class StableRepository
+    class ProductRepository
+    class CategoryRepository
+    class BovineBreedRepository
+  }
+  RA_I -[hidden]down- RA_A
+  RA_A -[hidden]down- RA_D
+  RA_D -[hidden]down- RA_INF
+  Bovine --> Stable
+  Product --> Category
 }
 
-' =====================================================================
-' AiAssistant — visión y chat conversacional
-' =====================================================================
-package "AiAssistant" {
-  class BovineAnalysis {
-    +Id : int
-    +UserId : int
-    +BovineId : int
-    +Score : decimal
-    +VisibleIssues : string
-    +UrgencyLevel : UrgencyLevel
-    +Recommendation : string
-    +Confidence : decimal
-    +CreatedAt : DateTime
+' ==================== IoTMonitoring ====================
+package "IoTMonitoring" as BC_IOT #FFFDF4 {
+  package "Interfaces" as IO_I {
+    class CollarController
+    class BovineHealthRecordController
+    class CollarRecoveryController
   }
-
-  class GeneralChatSession {
-    +Id : int
-    +UserId : int
-    +MessagesJson : string
-    +CreatedAt : DateTime
-    +UpdatedAt : DateTime
+  package "Application" as IO_A {
+    class CollarCommandService
+    class CollarQueryService
+    class BovineHealthRecordCommandService
+    class BovineHealthRecordQueryService
+    class SubscriptionContextFacade <<ACL>>
   }
-
-  class BovineChatSession {
-    +Id : int
-    +UserId : int
-    +BovineId : int
-    +MessagesJson : string
-    +CreatedAt : DateTime
-    +UpdatedAt : DateTime
+  package "Domain" as IO_D {
+    class Collar {
+      +Id : int
+      +DeviceId : string
+      +BovineId : int
+      +UserId : int
+      +LifecycleStatus : CollarLifecycleStatus
+      +ResolveOperationalStatus() : CollarOperationalStatus
+    }
+    class BovineHealthRecord {
+      +Id : int
+      +BovineId : int
+      +DeviceId : string
+      +Temperature : float
+      +HeartRate : float
+      +IsAlert : bool
+      +RecordedAt : DateTime
+      +EvaluateAlert() : bool
+    }
+    enum CollarLifecycleStatus {
+      Active
+      Maintenance
+      Suspended
+    }
+    enum CollarOperationalStatus {
+      Active
+      NoSignal
+      Maintenance
+      Suspended
+    }
+    interface ICollarRepository
+    interface IBovineHealthRecordRepository
   }
-
-  class ChatMessage <<value object>> {
-    +Role : string
-    +Content : string
-    +Timestamp : DateTime
+  package "Infrastructure" as IO_INF {
+    class CollarRepository
+    class BovineHealthRecordRepository
+    class MqttTelemetryConsumer <<MQTT>>
   }
-
-  enum SessionType {
-    General = 1
-    Bovine = 2
-  }
-
-  GeneralChatSession ..> ChatMessage : MessagesJson
-  BovineChatSession ..> ChatMessage : MessagesJson
+  IO_I -[hidden]down- IO_A
+  IO_A -[hidden]down- IO_D
+  IO_D -[hidden]down- IO_INF
 }
 
-' =====================================================================
-' SubscriptionManagement — planes, pagos y collares adicionales
-' =====================================================================
-package "SubscriptionManagement" {
-  class Subscription {
-    +Id : int
-    +UserId : int
-    +Plan : PlanType
-    +Status : SubscriptionStatus
-    +StartDate : DateTime?
-    +NextRenewal : DateTime?
-    +SuspendedAt : DateTime?
-    +Reminder10SentForRenewal : DateTime?
-    +Reminder5SentForRenewal : DateTime?
+' ==================== SubscriptionManagement ====================
+package "SubscriptionManagement" as BC_SUB #FFFDF4 {
+  package "Interfaces" as SU_I {
+    class SubscriptionController
+    class PaymentController
   }
-
-  class Payment {
-    +Id : int
-    +UserId : int
-    +Concept : PaymentConcept
-    +Amount : decimal
-    +Currency : string
-    +Status : PaymentStatus
-    +ProviderRef : string?
-    +IdempotencyKey : string
-    +PaidAt : DateTime?
+  package "Application" as SU_A {
+    class SubscriptionCommandService
+    class SubscriptionQueryService
+    class PaymentCommandService
+    class PaymentReminderService
+    class SubscriptionSuspensionService
   }
-
-  class AdditionalCollarRequest {
-    +Id : int
-    +UserId : int
-    +Status : AdditionalCollarStatus
-    +MonthlyAmount : decimal
-    +RequestedAt : DateTime
+  package "Domain" as SU_D {
+    class Subscription {
+      +Id : int
+      +UserId : int
+      +Plan : PlanType
+      +Status : SubscriptionStatus
+      +NextRenewal : DateTime?
+    }
+    class Payment {
+      +Id : int
+      +UserId : int
+      +Concept : PaymentConcept
+      +Amount : decimal
+      +Status : PaymentStatus
+      +IdempotencyKey : string
+    }
+    class AdditionalCollarRequest {
+      +Id : int
+      +UserId : int
+      +Status : AdditionalCollarStatus
+      +MonthlyAmount : decimal
+    }
+    enum PlanType {
+      Free
+      Plus
+    }
+    enum SubscriptionStatus {
+      Active
+      Expired
+      Suspended
+      Cancelled
+    }
+    enum PaymentStatus {
+      Pending
+      Paid
+      Failed
+      Refunded
+    }
+    interface ISubscriptionRepository
+    interface IPaymentRepository
+    interface IPaymentGateway <<port>>
+    interface IEmailSender <<port>>
   }
-
-  enum PlanType {
-    Free
-    Plus
+  package "Infrastructure" as SU_INF {
+    class SubscriptionRepository
+    class PaymentRepository
+    class MockPaymentGateway
+    class ResendEmailSender
+    class LogEmailSender
   }
-
-  enum SubscriptionStatus {
-    Active
-    Expired
-    Suspended
-    Cancelled
-  }
-
-  enum PaymentConcept {
-    PlusMonthly
-    AdditionalCollar
-  }
-
-  enum PaymentStatus {
-    Pending
-    Paid
-    Failed
-    Refunded
-  }
-
-  enum AdditionalCollarStatus {
-    Requested
-    Approved
-    Delivered
-    Cancelled
-  }
-
-  Subscription --> PlanType
-  Subscription --> SubscriptionStatus
-  Payment --> PaymentConcept
-  Payment --> PaymentStatus
-  AdditionalCollarRequest --> AdditionalCollarStatus
+  SU_I -[hidden]down- SU_A
+  SU_A -[hidden]down- SU_D
+  SU_D -[hidden]down- SU_INF
 }
 
-' =====================================================================
-' Referencias entre bounded contexts (por id, vía ACL — no navegación EF)
-' =====================================================================
-note as N1
-  Los contextos se referencian **por id** (User.Id, Bovine.Id, ...)
-  a través de fachadas ACL, no por navegación directa entre agregados.
-  Las flechas punteadas representan estas referencias lógicas.
+' ==================== AiAssistant ====================
+package "AiAssistant" as BC_AI #FFFDF4 {
+  package "Interfaces" as AI_I {
+    class AIController
+  }
+  package "Application" as AI_A {
+    class AIAssistantCommandService
+    class AIAssistantQueryService
+    class RanchContextFacade <<ACL>>
+    class AlertContextFacade <<ACL>>
+    class IoTContextFacade <<ACL>>
+  }
+  package "Domain" as AI_D {
+    class BovineAnalysis {
+      +Id : int
+      +BovineId : int
+      +Score : decimal
+      +UrgencyLevel : UrgencyLevel
+      +Recommendation : string
+      +Confidence : decimal
+    }
+    class GeneralChatSession {
+      +UserId : int
+      +MessagesJson : string
+    }
+    class BovineChatSession {
+      +UserId : int
+      +BovineId : int
+      +MessagesJson : string
+    }
+    class ChatMessage <<VO>> {
+      +Role : string
+      +Content : string
+    }
+    interface IAISessionRepository
+    interface IBovineAnalysisRepository
+    interface IAIChatService <<port>>
+    interface IAIVisionService <<port>>
+  }
+  package "Infrastructure" as AI_INF {
+    class AISessionRepository
+    class BovineAnalysisRepository
+    class LmStudioChatService
+    class LmStudioVisionService
+    class OpenAICompatibleModelClient <<OpenAI/Azure>>
+  }
+  AI_I -[hidden]down- AI_A
+  AI_A -[hidden]down- AI_D
+  AI_D -[hidden]down- AI_INF
+}
+
+' ==================== Persistencia compartida ====================
+package "Shared / Infrastructure" as BC_SHARED #EFEFEF {
+  class AppDbContext <<EF Core / MySQL>>
+  interface "IBaseRepository<T>" as IBaseRepo
+  class "BaseRepository<T>" as BaseRepo
+  interface IUnitOfWork
+  BaseRepo ..|> IBaseRepo
+}
+
+' ---- Disposición en una sola columna vertical ----
+' Se encadena nodo-a-nodo (última clase de un contexto -> controlador del siguiente)
+' para forzar a Graphviz a apilar los contextos verticalmente en una sola columna.
+UserRepository              -[hidden]--> BovineController
+BovineBreedRepository       -[hidden]--> StaffController
+StaffRepository             -[hidden]--> CollarController
+MqttTelemetryConsumer       -[hidden]--> CampaignController
+CampaignRepository          -[hidden]--> SubscriptionController
+LogEmailSender              -[hidden]--> AlertController
+LogPushSender               -[hidden]--> AIController
+OpenAICompatibleModelClient -[hidden]--> AppDbContext
+
+note bottom of BC_SHARED
+  **Regla de dependencia (hexagonal):** Interfaces -> Application -> Domain <- Infrastructure.
+  Cada adaptador de Infrastructure (Repository, MqttTelemetryConsumer, OneSignalPushSender,
+  ResendEmailSender, OpenAICompatibleModelClient, ...) implementa un puerto/interface del Domain.
+  Todas las implementaciones de repositorio heredan de BaseRepository<T> y comparten
+  AppDbContext (EF Core sobre MySQL) e IUnitOfWork.
+  Las referencias entre Bounded Contexts se resuelven por id vía fachadas ACL.
 end note
-
-Collar ..> Bovine : bovineId
-BovineHealthRecord ..> Bovine : bovineId
-Alert ..> Bovine : bovineId?
-BovineAnalysis ..> Bovine : bovineId
-CampaignBovine ..> Bovine : bovineId
-CampaignStable ..> Stable : stableId
-Staff ..> User : userId / linkedUserId
-Subscription ..> User : userId
-PasswordResetToken ..> User : userId
 
 @enduml
