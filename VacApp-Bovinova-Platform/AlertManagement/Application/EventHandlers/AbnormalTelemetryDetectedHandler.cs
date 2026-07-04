@@ -1,4 +1,6 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
+using VacApp_Bovinova_Platform.AlertManagement.Application.Outbound;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.Commands;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Model.ValueObjects;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Services;
@@ -13,7 +15,10 @@ namespace VacApp_Bovinova_Platform.AlertManagement.Application.EventHandlers;
 /// (fever, hypothermia, tachycardia, …) is described in the alert message.
 /// AlertManagement does NOT depend on IoTMonitoring — only on the shared event contract.
 /// </summary>
-public class AbnormalTelemetryDetectedHandler(IAlertCommandService alertCommandService)
+public class AbnormalTelemetryDetectedHandler(
+    IAlertCommandService alertCommandService,
+    IPushNotificationService pushNotificationService,
+    ILogger<AbnormalTelemetryDetectedHandler> logger)
     : INotificationHandler<AbnormalTelemetryDetectedEvent>
 {
     public async Task Handle(AbnormalTelemetryDetectedEvent notification, CancellationToken cancellationToken)
@@ -29,7 +34,19 @@ public class AbnormalTelemetryDetectedHandler(IAlertCommandService alertCommandS
             Message:      message
         );
 
-        await alertCommandService.Handle(command);
+        var alert = await alertCommandService.Handle(command);
+        if (alert is null) return;
+
+        // Best-effort background push. A delivery failure must never break alert creation.
+        var title = urgency == UrgencyLevel.Red ? "🔴 Alerta biométrica crítica" : "🟡 Alerta biométrica";
+        try
+        {
+            await pushNotificationService.SendToUserAsync(notification.UserId, title, message, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Push notification failed for user {UserId}", notification.UserId);
+        }
     }
 
     private static UrgencyLevel DetermineUrgency(AbnormalTelemetryDetectedEvent n)

@@ -35,9 +35,11 @@ using VacApp_Bovinova_Platform.Shared.Application.OutboundServices;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Media.Cloudinary;
 using VacApp_Bovinova_Platform.AlertManagement.Application.Internal.CommandServices;
 using VacApp_Bovinova_Platform.AlertManagement.Application.Internal.QueryServices;
+using VacApp_Bovinova_Platform.AlertManagement.Application.Outbound;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Repositories;
 using VacApp_Bovinova_Platform.AlertManagement.Domain.Services;
 using VacApp_Bovinova_Platform.AlertManagement.Infrastructure.Persistence.EFC.Repositories;
+using VacApp_Bovinova_Platform.AlertManagement.Infrastructure.Push;
 using VacApp_Bovinova_Platform.IAM.Infrastructure.Pipeline.Middleware.Extensions;
 using VacApp_Bovinova_Platform.Shared.Infrastructure.Pipeline.Middleware.Extensions;
 using VacApp_Bovinova_Platform.IoTMonitoring.Application.Internal.CommandServices;
@@ -244,6 +246,14 @@ if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("RESEND_API_KE
     builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>();
 else
     builder.Services.AddScoped<IEmailSender, LogEmailSender>();
+
+// Background push (OneSignal): real delivery when ONESIGNAL_REST_API_KEY is configured,
+// else a no-op logger so the demo runs without external config. OneSignal wraps FCM/APNs,
+// so the backend targets the user by external-id alias and stores no device tokens.
+if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ONESIGNAL_REST_API_KEY")))
+    builder.Services.AddHttpClient<IPushNotificationService, OneSignalPushSender>();
+else
+    builder.Services.AddScoped<IPushNotificationService, LogPushSender>();
 
 // Daily billing sweep: pre-renewal reminders (10/5 days) + suspend overdue-unpaid Plus.
 builder.Services.AddScoped<IPaymentReminderService, PaymentReminderService>();
